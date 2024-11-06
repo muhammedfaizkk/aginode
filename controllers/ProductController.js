@@ -78,7 +78,7 @@ exports.addProducts = async (req, res, next) => {
 
 
 exports.getAllproducts = async (req, res, next) => {
-    const page = parseInt(req.query.page) || 1; // Current page number
+    const page = parseInt(req.query.page) || 1; 
     const limit = parseInt(req.query.limit) || 12; // Set the limit to 12 products per page
     const skip = (page - 1) * limit;
 
@@ -119,7 +119,8 @@ exports.getProduct = async (req, res, next) => {
 
     try {
         const findedProduct = await Product.findById(id); // Pass the ID to findById()
-
+        console.log(findedProduct);
+        
         if (!findedProduct) {
             return res.status(404).json({
                 success: false,
@@ -159,7 +160,8 @@ const deleteImagesWithRetry = async (publicIds, retries = 3, delay = 1000) => {
 exports.deleteProduct = async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
-
+        console.log(product);
+        
         if (!product) {
             return res.status(404).json({
                 success: false,
@@ -175,8 +177,6 @@ exports.deleteProduct = async (req, res) => {
                 const folder = parts[parts.length - 2];  // Folder name in Cloudinary
                 return `${folder}/${publicId}`;  // Public ID format for Cloudinary
             });
-
-            // Attempt to delete images from Cloudinary with retry logic
             const result = await deleteImagesWithRetry(publicIds);
             
             // Check Cloudinary response for any issues
