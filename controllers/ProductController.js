@@ -39,7 +39,7 @@ exports.adminSignin = async (req, res, next) => {
 };
 
 exports.addProducts = async (req, res, next) => {
-    const { productName, originalPrice, currentPrice,specifications} = req.body;
+    const { productName, originalPrice, currentPrice,specifications,category} = req.body;
    
     try {
         const photographs = req.files.map(file => file.path);  
