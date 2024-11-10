@@ -50,6 +50,7 @@ exports.addProducts = async (req, res, next) => {
             originalPrice,
             currentPrice,
             specifications,
+            category,
             photographs,  
         });
 
