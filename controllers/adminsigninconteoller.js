@@ -2,47 +2,16 @@ const Admin = require("../models/adminModel");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-// Admin Signup
-exports.adminSignup = async (req, res, next) => {
-    try {
-        const { email,password, role} = req.body;
 
-        if ( !password || !email) {
+exports.adminSignin = async (req, res, next) => {
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
             return res.status(400).json({ message: "Please provide all required fields" });
         }
 
         const existingAdmin = await Admin.findOne({ email });
-        if (existingAdmin) {
-            return res.status(400).json({ message: "Admin already exists with this email" });
-        }
-
-        // Hash the password
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Create the admin
-        const newAdmin = await Admin.create({
-            email,
-            password: hashedPassword,
-            role: role || 'admin'
-        });
-
-        res.status(201).json({ success: true, message: "Admin registered successfully" });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// Admin Signin
-exports.adminSignin = async (req, res, next) => {
-    try {
-        const { userName, password } = req.body;
-
-        if (!userName || !password) {
-            return res.status(400).json({ message: "Please provide all required fields" });
-        }
-
-        // Check if admin exists
-        const existingAdmin = await Admin.findOne({ userName });
         if (!existingAdmin) {
             return res.status(401).json({ message: "Invalid username or password" });
         }
