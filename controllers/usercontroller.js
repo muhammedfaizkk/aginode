@@ -48,6 +48,7 @@ exports.signin = async (req, res, next) => {
 
         // Find the user by email
         const user = await User.findOne({ email });
+
         if (!user) {
             return res.status(401).json({ message: "Invalid email or password" });
         }
@@ -60,18 +61,25 @@ exports.signin = async (req, res, next) => {
 
         // Generate a JWT token
         const token = jwt.sign(
-            { id: user._id, username: user.username },
+            { id: user._id, username: user.userName }, // Use the correct 'userName' field here
             process.env.JWT_SECRET_KEY,
             { expiresIn: "1h" }
         );
 
+        // Return the response
         res.status(200).json({
             success: true,
             message: "Logged in successfully",
-            user,
+            user: {
+                userName: user.userName, 
+                _id: user._id,
+                role: user.role,
+                email: user.email
+            },
             token
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
+
