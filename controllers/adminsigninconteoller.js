@@ -5,7 +5,7 @@ const Admin = require('../models/adminModel');
 exports.adminSignin = async (req, res, next) => {
     try {
         const { email, password } = req.body;
-        
+
         if (!email || !password) {
             return res.status(400).json({ message: "Please provide all required fields" });
         }

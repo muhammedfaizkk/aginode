@@ -5,7 +5,7 @@ const jwt = require("jsonwebtoken");
 // User Signup
 exports.signup = async (req, res, next) => {
     try {
-        const { username, email, password } = req.body;
+        const { username, email, password,role } = req.body;
 
         if (!username || !email || !password) {
             return res.status(400).json({ message: "Please fill all required fields" });
@@ -20,7 +20,7 @@ exports.signup = async (req, res, next) => {
             username,
             email,
             password: hashedPassword,
-            role
+            role:role || 'user'
         });
 
         res.status(201).json({
