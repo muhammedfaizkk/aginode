@@ -5,14 +5,14 @@ const jwt = require("jsonwebtoken");
 // Admin Signup
 exports.adminSignup = async (req, res, next) => {
     try {
-        const { userName, password } = req.body;
+        const { userName, password,role } = req.body;
 
         if (!userName || !password) {
             return res.status(400).json({ message: "Please provide all required fields" });
         }
 
         // Check if admin already exists
-        const existingAdmin = await Admin.findOne({ userName });
+        const existingAdmin = await Admin.findOne({ email });
         if (existingAdmin) {
             return res.status(400).json({ message: "Admin already exists with this username" });
         }
@@ -22,8 +22,9 @@ exports.adminSignup = async (req, res, next) => {
 
         // Create the admin
         const newAdmin = await Admin.create({
-            userName,
-            password: hashedPassword
+            email,
+            password: hashedPassword,
+            role:role || 'admin'
         });
 
         res.status(201).json({ success: true, message: "Admin registered successfully" });
