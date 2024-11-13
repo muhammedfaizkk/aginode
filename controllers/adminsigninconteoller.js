@@ -1,12 +1,11 @@
-const Admin = require("../models/adminModel");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const Admin = require('../models/adminModel');
 
 exports.adminSignin = async (req, res, next) => {
     try {
         const { email, password } = req.body;
-
+        
         if (!email || !password) {
             return res.status(400).json({ message: "Please provide all required fields" });
         }
@@ -25,7 +24,7 @@ exports.adminSignin = async (req, res, next) => {
         // Generate JWT token
         const token = jwt.sign(
             { id: existingAdmin._id, userName: existingAdmin.userName },
-            process.env.JWT_SECRET_KEY,
+            process.env.JWT_SECRET_KEY, // Ensure this is available in your .env file
             { expiresIn: "1h" }
         );
 
