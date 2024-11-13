@@ -68,6 +68,7 @@ exports.signin = async (req, res, next) => {
         res.status(200).json({
             success: true,
             message: "Logged in successfully",
+            user,
             token
         });
     } catch (error) {
