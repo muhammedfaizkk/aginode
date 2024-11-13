@@ -1,42 +1,10 @@
 const Product = require('../models/ProudctModel');
 const admin = require('../models/adminModel')
-const bcrypt = require('bcryptjs'); // For hashing passwords
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cloudinary = require('cloudinary').v2;
 
-exports.adminSignin = async (req, res, next) => {
-    try {
-        const { userName, password } = req.body;
 
-        if (!userName || !password) {
-            return res.status(400).json({ message: "Please provide all required fields" });
-        }
-
-        // Find the admin by username
-        const existingAdmin = await admin.findOne({ userName });
-        if (!existingAdmin) {
-            return res.status(401).json({ message: "Invalid username or password" });
-        }
-
-        // Compare the provided password with the stored hashed password
-        const isMatch = await bcrypt.compare(password, existingAdmin.password);
-        if (!isMatch) {
-            return res.status(401).json({ message: "Invalid username or password" });
-        }
-
-        // Generate a token (JWT)
-        const token = jwt.sign(
-            { id: existingAdmin._id, userName: existingAdmin.userName },
-            process.env.JWT_SECRET_KEY, // Make sure to have a secret key in your .env file
-            { expiresIn: '1h' } // Token expiration time
-        );
-
-        // Send the token and a success message
-        res.status(200).json({ token, message: "Logged in successfully" });
-    } catch (error) {
-        next(error);
-    }
-};
 
 exports.addProducts = async (req, res, next) => {
     const { productName, originalPrice, currentPrice,specifications,category} = req.body;

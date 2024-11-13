@@ -1,2 +1,7 @@
 .vercel
 .env
+# Node.js
+node_modules/
+/public/*
+
+!/public/sample.txt
