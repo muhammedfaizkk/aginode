@@ -7,19 +7,19 @@ const cloudinary = require('cloudinary').v2;
 
 
 exports.addProducts = async (req, res, next) => {
-    const { productName, originalPrice, currentPrice,specifications,category} = req.body;
-   
+
+    const { productName, originalPrice, currentPrice, specifications, category } = req.body;
+
     try {
-        const photographs = req.files.map(file => file.path);  
-        console.log(photographs);
-        
+        const photographs = req.files.map(file => file.path);
+      
         const product = await Product.create({
             productName,
             originalPrice,
             currentPrice,
             specifications,
+            photographs,
             category,
-            photographs,  
         });
 
         if (!product) {
@@ -34,7 +34,6 @@ exports.addProducts = async (req, res, next) => {
             product,
         });
     } catch (error) {
-        // Handle any errors that occur during the process
         res.status(500).json({
             success: false,
             message: error.message,
@@ -47,7 +46,7 @@ exports.addProducts = async (req, res, next) => {
 
 
 exports.getAllproducts = async (req, res, next) => {
-    const page = parseInt(req.query.page) || 1; 
+    const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 12; // Set the limit to 12 products per page
     const skip = (page - 1) * limit;
 
@@ -87,8 +86,7 @@ exports.getProduct = async (req, res, next) => {
     const { id } = req.params;
 
     try {
-        const findedProduct = await Product.findById(id); // Pass the ID to findById()
-        console.log(findedProduct);
+        const findedProduct = await Product.findById(id); 
         
         if (!findedProduct) {
             return res.status(404).json({
@@ -118,7 +116,7 @@ const deleteImagesWithRetry = async (publicIds, retries = 3, delay = 1000) => {
             return result;
         } catch (error) {
             if (attempt === retries - 1) {
-                throw error; 
+                throw error;
             }
             console.warn(`Retrying deleteImages... Attempt ${attempt + 1}`);
             await new Promise(res => setTimeout(res, delay));
@@ -130,7 +128,7 @@ exports.deleteProduct = async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
         console.log(product);
-        
+
         if (!product) {
             return res.status(404).json({
                 success: false,
@@ -147,7 +145,7 @@ exports.deleteProduct = async (req, res) => {
                 return `${folder}/${publicId}`;  // Public ID format for Cloudinary
             });
             const result = await deleteImagesWithRetry(publicIds);
-            
+
             // Check Cloudinary response for any issues
             if (result.deleted && Object.values(result.deleted).some(status => status === 'not_found')) {
                 return res.status(400).json({
