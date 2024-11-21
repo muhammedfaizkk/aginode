@@ -28,7 +28,7 @@ exports.signup = async (req, res, next) => {
             message: "User registered successfully",
             user: {
                 id: user._id,
-                username: user.userName,
+                userName: user.userName,
                 email: user.email
             }
         });
