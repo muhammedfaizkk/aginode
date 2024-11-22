@@ -6,7 +6,7 @@ const jwt = require("jsonwebtoken");
 exports.signup = async (req, res, next) => {
     try {
         const { userName, email, password,role } = req.body;
-        console.log(req.body);
+
         if (!userName || !email || !password) {
             return res.status(400).json({ message: "Please fill all required fields" });
         }
@@ -54,7 +54,7 @@ exports.signin = async (req, res, next) => {
 
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            return res.status(401).json({ message: "Invalid email or password" });
+            return res.status(401).json({ message: "Invalid email or password.." });
         }
 
         // Generate a JWT token
