@@ -5,45 +5,30 @@ const jwt = require("jsonwebtoken");
 exports.signup = async (req, res) => {
     try {
         const { username, email, password, role } = req.body;
+        console.log("Received signup request:", { username, email, password, role });  // Log the request data
 
-        // Validate required fields
         if (!username || !email || !password) {
             return res.status(400).json({ message: "Please fill all required fields" });
         }
-
-        // Trim username and check if it's empty
-        const trimmedUsername = username.trim();
-        if (!trimmedUsername) {
-            return res.status(400).json({ message: "Username cannot be empty" });
-        }
-
-        // Check if the email already exists
-        const existingUserByEmail = await Users.findOne({ email: email.toLowerCase() });
+        const existingUserByEmail = await Users.findOne({ email });
         if (existingUserByEmail) {
             return res.status(400).json({ message: "User already exists with this email" });
         }
 
-        // Check if the username already exists
-        const existingUserByUsername = await Users.findOne({ username: trimmedUsername });
+        const existingUserByUsername = await Users.findOne({ username });
         if (existingUserByUsername) {
             return res.status(400).json({ message: "Username already exists" });
         }
 
-        // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Create a new user
         const user = new Users({
-            username: trimmedUsername,
+            username,
             email: email.toLowerCase(),
             password: hashedPassword,
-            role: role || 'user', // Default to 'user' if no role is provided
+            role: role || 'user',
         });
 
-        // Save the user to the database
         await user.save();
-
-        // Respond with success
         res.status(201).json({
             success: true,
             message: "User registered successfully",
@@ -54,15 +39,15 @@ exports.signup = async (req, res) => {
             },
         });
     } catch (error) {
-        console.error("Error during signup:", error);
-
+        console.error("Error during signup:", error); // Log the error details
         res.status(500).json({
             message: "An unexpected error occurred",
             error: error.message,
-            stack: error.stack, // Optional: for debugging purposes
+            stack: error.stack,
         });
     }
 };
+
 
 exports.signin = async (req, res, next) => {
     try {
