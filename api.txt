@@ -1,0 +1,72 @@
+
+cart
+
+router.route("/api/addToCart").post(protectRoute, addToCart);
+router.route("/api/updateCartItemQuantity/:cartItemId").put(protectRoute, updateCartItemQuantity);  
+router.route("/api/removeCartItem/:cartItemId").delete(protectRoute, removeCartItem); 
+router.route("/api/clearCart").delete(protectRoute, clearCart); 
+router.route("/api/getCart").get(protectRoute, getCart);
+
+
+my orders
+
+router.route('/api/createorder').post(protectRoute,createOrder)
+router.route('/api/updateorder/:orderId').put(protectRoute,updateOrderStatus)
+router.route('/api/deleteorde/:orderId').post(protectRoute,deleteOrder)
+router.route('/api/getAllorders').get(protectRoute,getAllOrders)
+router.route('/api/getAllorders/:orderId').get(protectRoute,getOrderById)
+
+
+
+adimin singin->>
+
+https://aginode.vercel.app/api/adminSignin
+
+email: admin@gmail.com       password: admin@123
+
+User signup->>
+
+https://aginode.vercel.app/api/signup
+
+fields :{userName,email,password }
+
+User signin->>
+
+https://aginode.vercel.app/api/signin
+fields :{email,password }
+
+Add product->>
+
+https://aginode.vercel.app/api/addproducts
+
+Get all product->>
+
+https://aginode.vercel.app/api/getAllproducts
+
+Delete product->>
+
+https://aginode.vercel.app/api/productsdelete
+
+
+Orders Api
+https://aginode.vercel.app/api/createorder
+
+https://aginode.vercel.app
+/api/updateorder/:orderId
+
+https://aginode.vercel.app/api/deleteorde/:orderId
+
+https://aginode.vercel.app/api/getAllorders
+
+https://aginode.vercel.app/api/getAllorders/:orderId
+
+Cart Api
+https://aginode.vercel.app/api/addToCart
+
+https://aginode.vercel.app/api/updateCartItemQuantity/:cartItemId
+
+https://aginode.vercel.app/api/removeCartItem/:cartItemId
+
+https://aginode.vercel.app/api/clearCart
+
+https://aginode.vercel.app/api/getCart

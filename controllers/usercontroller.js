@@ -3,28 +3,35 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 
-
 exports.signup = async (req, res) => {
     try {
         const { userName, email, password, role } = req.body;
 
+        // Validate required fields
         if (!userName || !email || !password) {
             return res.status(400).json({ message: "Please fill all required fields" });
         }
+
+        // Check if the user already exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({ message: "User already exists with this email" });
         }
 
+        // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        // Create a new user
         const user = new User({
             userName: userName.trim(),
             email: email.toLowerCase(),
             password: hashedPassword,
-            role: role || 'user', // Default role
+            role: role || 'user',
         });
+
+        // Save the user
         await user.save();
+
         res.status(201).json({
             success: true,
             message: "User registered successfully",
@@ -39,10 +46,10 @@ exports.signup = async (req, res) => {
             const duplicateKey = Object.keys(error.keyValue)[0];
             return res.status(400).json({ message: `${duplicateKey} already exists` });
         }
-        res.status(500).json({ message: error.message });
+        console.error("Error during signup:", error);
+        res.status(500).json({ message: "An unexpected error occurred" });
     }
 };
-
 
 
 exports.signin = async (req, res, next) => {
