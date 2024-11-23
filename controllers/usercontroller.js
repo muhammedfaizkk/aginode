@@ -5,18 +5,12 @@ const jwt = require("jsonwebtoken");
 exports.signup = async (req, res) => {
     try {
         const { username, email, password, role } = req.body;
-
-        // Validate required fields
         if (!username || !email || !password) {
             return res.status(400).json({ message: "Please fill all required fields" });
         }
-
-        // Trim and validate username
         if (!username.trim()) {
             return res.status(400).json({ message: "Username cannot be empty" });
         }
-
-        // Check if the user already exists by email
         const existingUserByEmail = await User.findOne({ email });
         if (existingUserByEmail) {
             return res.status(400).json({ message: "User already exists with this email" });
@@ -33,7 +27,7 @@ exports.signup = async (req, res) => {
 
         // Create a new user
         const user = new User({
-            username: username.trim(),
+            username: username,
             email: email.toLowerCase(),
             password: hashedPassword,
             role: role || 'user',
