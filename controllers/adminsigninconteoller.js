@@ -23,7 +23,7 @@ exports.adminSignin = async (req, res, next) => {
 
         // Generate JWT token
         const token = jwt.sign(
-            { id: existingAdmin._id, userName: existingAdmin.userName },
+            { id: existingAdmin._id, username: existingAdmin.username },
             process.env.JWT_SECRET_KEY, // Ensure this is available in your .env file
             { expiresIn: "1h" }
         );

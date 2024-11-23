@@ -11,7 +11,7 @@ exports.signup = async (req, res) => {
             return res.status(400).json({ message: "Please fill all required fields" });
         }
 
-        // Ensure that username is not null or empty
+        // Trim and validate username
         if (!username.trim()) {
             return res.status(400).json({ message: "Username cannot be empty" });
         }
@@ -23,7 +23,7 @@ exports.signup = async (req, res) => {
         }
 
         // Check if the user already exists by username
-        const existingUserByUsername = await User.findOne({ username });
+        const existingUserByUsername = await User.findOne({ username: username.trim() });
         if (existingUserByUsername) {
             return res.status(400).json({ message: "Username already exists" });
         }
@@ -63,7 +63,6 @@ exports.signup = async (req, res) => {
         });
     }
 };
-
 
 
 exports.signin = async (req, res, next) => {

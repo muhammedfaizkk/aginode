@@ -87,7 +87,7 @@ exports.deleteOrder = async (req, res) => {
 // Get all orders
 exports.getAllOrders = async (req, res) => {
     try {
-        const orders = await Order.find().populate('user', 'userName email').populate('products.productId', 'productName price');
+        const orders = await Order.find().populate('user', 'username email').populate('products.productId', 'productName price');
         res.status(200).json({
             success: true,
             orders,
@@ -103,7 +103,7 @@ exports.getOrderById = async (req, res) => {
         const { orderId } = req.params;
 
         const order = await Order.findById(orderId)
-            .populate('user', 'userName email')
+            .populate('user', 'username email')
             .populate('products.productId', 'productName price');
 
         if (!order) {
