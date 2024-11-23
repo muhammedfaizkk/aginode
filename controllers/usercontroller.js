@@ -1,4 +1,4 @@
-const User = require("../models/userModel");
+const Users = require("../models/usersmodel");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
@@ -11,13 +11,13 @@ exports.signup = async (req, res) => {
         if (!username.trim()) {
             return res.status(400).json({ message: "Username cannot be empty" });
         }
-        const existingUserByEmail = await User.findOne({ email });
+        const existingUserByEmail = await Users.findOne({ email });
         if (existingUserByEmail) {
             return res.status(400).json({ message: "User already exists with this email" });
         }
 
         // Check if the user already exists by username
-        const existingUserByUsername = await User.findOne({ username: username.trim() });
+        const existingUserByUsername = await Users.findOne({ username: username.trim() });
         if (existingUserByUsername) {
             return res.status(400).json({ message: "Username already exists" });
         }
@@ -26,7 +26,7 @@ exports.signup = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         // Create a new user
-        const user = new User({
+        const user = new Users({
             username: username,
             email: email.toLowerCase(),
             password: hashedPassword,
@@ -66,7 +66,7 @@ exports.signin = async (req, res, next) => {
         if (!email || !password) {
             return res.status(400).json({ message: "Please provide email and password" });
         }
-        const user = await User.findOne({ email });
+        const user = await Users.findOne({ email });
 
         if (!user) {
             return res.status(401).json({ message: "Invalid email or password" });
