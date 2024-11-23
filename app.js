@@ -13,7 +13,7 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.urlencoded({ extended: true }));
 app.use('/public', express.static('public'));
 app.use(ProductRout)
-app.use('/api',userRout)
+app.use(userRout)
 app.use(adminRout)
 app.use(ordersRoute)
 app.use(cartRoute)

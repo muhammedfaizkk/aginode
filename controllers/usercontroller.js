@@ -5,7 +5,6 @@ const jwt = require("jsonwebtoken");
 exports.signup = async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
-       
         if (!name || !email || !password) {
             return res.status(400).json({ message: "Please fill all required fields" });
         }
@@ -13,10 +12,9 @@ exports.signup = async (req, res) => {
         if (existingUserByEmail) {
             return res.status(400).json({ message: "User already exists with this email" });
         }
-
         const existingUserByname = await Users.findOne({ name });
         if (existingUserByname) {
-            return res.status(400).json({ message: "name already exists" });
+            return res.status(400).json({ message: "Name already exists" });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
