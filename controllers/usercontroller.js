@@ -12,10 +12,16 @@ exports.signup = async (req, res) => {
             return res.status(400).json({ message: "Please fill all required fields" });
         }
 
-        // Check if the user already exists
+        // Check if the user already exists by email
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({ message: "User already exists with this email" });
+        }
+
+        // Check if the user already exists by username
+        const existingUsername = await User.findOne({ username });
+        if (existingUsername) {
+            return res.status(400).json({ message: "Username already exists" });
         }
 
         // Hash the password
@@ -42,15 +48,11 @@ exports.signup = async (req, res) => {
             },
         });
     } catch (error) {
-        if (error.code === 11000) {
-            const duplicateKey = Object.keys(error.keyValue)[0];
-            return res.status(400).json({ message: `${duplicateKey} already exists` });
-        }
+        // Handle any unexpected error
         console.error("Error during signup:", error);
         res.status(500).json({ message: "An unexpected error occurred" });
     }
 };
-
 
 exports.signin = async (req, res, next) => {
     try {
