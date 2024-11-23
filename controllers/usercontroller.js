@@ -1,41 +1,48 @@
 const User = require("../models/userModel");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const bcrypt = require('bcrypt');
 
 
-exports.signup = async (req, res, next) => {
+exports.signup = async (req, res) => {
     try {
-        const { userName, email, password,role } = req.body;
+        const { userName, email, password, role } = req.body;
 
         if (!userName || !email || !password) {
             return res.status(400).json({ message: "Please fill all required fields" });
         }
-
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({ message: "User already exists with this email" });
         }
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const user = await User.create({
-            userName,
-            email,
-            password: hashedPassword,
-            role:role || 'user'
-        });
 
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const user = new User({
+            userName: userName.trim(),
+            email: email.toLowerCase(),
+            password: hashedPassword,
+            role: role || 'user', // Default role
+        });
+        await user.save();
         res.status(201).json({
             success: true,
             message: "User registered successfully",
             user: {
                 id: user._id,
                 userName: user.userName,
-                email: user.email
-            }
+                email: user.email,
+            },
         });
     } catch (error) {
+        if (error.code === 11000) {
+            const duplicateKey = Object.keys(error.keyValue)[0];
+            return res.status(400).json({ message: `${duplicateKey} already exists` });
+        }
         res.status(500).json({ message: error.message });
     }
 };
+
 
 
 exports.signin = async (req, res, next) => {
