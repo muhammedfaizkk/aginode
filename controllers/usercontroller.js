@@ -5,8 +5,7 @@ const jwt = require("jsonwebtoken");
 exports.signup = async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
-        console.log("Received signup request:", { name, email, password, role }); 
-
+       
         if (!name || !email || !password) {
             return res.status(400).json({ message: "Please fill all required fields" });
         }
@@ -39,7 +38,7 @@ exports.signup = async (req, res) => {
             },
         });
     } catch (error) {
-        console.error("Error during signup:", error); // Log the error details
+        console.error("Error during signup:", error); 
         res.status(500).json({
             message: "An unexpected error occurred",
             error: error.message,

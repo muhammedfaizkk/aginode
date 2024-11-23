@@ -14,16 +14,13 @@ exports.adminSignin = async (req, res, next) => {
         if (!existingAdmin) {
             return res.status(401).json({ message: "Invalid email or password" });
         }
-
-        // Compare the password
         const isMatch = await bcrypt.compare(password, existingAdmin.password);
         if (!isMatch) {
             return res.status(401).json({ message: "Invalid email or password" });
         }
 
-        // Generate JWT token (use email or id for the payload, depending on your requirements)
         const token = jwt.sign(
-            { id: existingAdmin._id, email: existingAdmin.email },  // Use email if userName is null
+            { id: existingAdmin._id, email: existingAdmin.email }, 
             process.env.JWT_SECRET_KEY,
             { expiresIn: "1h" }
         );
