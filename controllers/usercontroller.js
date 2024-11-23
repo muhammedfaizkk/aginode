@@ -4,10 +4,10 @@ const jwt = require("jsonwebtoken");
 
 exports.signup = async (req, res) => {
     try {
-        const { username, email, password, role } = req.body;
-        console.log("Received signup request:", { username, email, password, role });  // Log the request data
+        const { name, email, password, role } = req.body;
+        console.log("Received signup request:", { name, email, password, role }); 
 
-        if (!username || !email || !password) {
+        if (!name || !email || !password) {
             return res.status(400).json({ message: "Please fill all required fields" });
         }
         const existingUserByEmail = await Users.findOne({ email });
@@ -15,14 +15,14 @@ exports.signup = async (req, res) => {
             return res.status(400).json({ message: "User already exists with this email" });
         }
 
-        const existingUserByUsername = await Users.findOne({ username });
-        if (existingUserByUsername) {
-            return res.status(400).json({ message: "Username already exists" });
+        const existingUserByname = await Users.findOne({ name });
+        if (existingUserByname) {
+            return res.status(400).json({ message: "name already exists" });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
         const user = new Users({
-            username,
+            name,
             email: email.toLowerCase(),
             password: hashedPassword,
             role: role || 'user',
@@ -34,7 +34,7 @@ exports.signup = async (req, res) => {
             message: "User registered successfully",
             user: {
                 id: user._id,
-                username: user.username,
+                name: user.name,
                 email: user.email,
             },
         });
@@ -73,7 +73,7 @@ exports.signin = async (req, res, next) => {
 
         // Generate a JWT token
         const token = jwt.sign(
-            { id: user._id, username: user.username },
+            { id: user._id, name: user.name },
             process.env.JWT_SECRET_KEY,
             { expiresIn: "1d" }
         );
@@ -83,7 +83,7 @@ exports.signin = async (req, res, next) => {
             success: true,
             message: "Logged in successfully",
             user: {
-                username: user.username,
+                name: user.name,
                 _id: user._id,
                 role: user.role,
                 email: user.email,

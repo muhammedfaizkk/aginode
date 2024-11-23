@@ -12,23 +12,27 @@ exports.adminSignin = async (req, res, next) => {
 
         const existingAdmin = await Admin.findOne({ email });
         if (!existingAdmin) {
-            return res.status(401).json({ message: "Invalid username or password" });
+            return res.status(401).json({ message: "Invalid email or password" });
         }
 
         // Compare the password
         const isMatch = await bcrypt.compare(password, existingAdmin.password);
         if (!isMatch) {
-            return res.status(401).json({ message: "Invalid username or password" });
+            return res.status(401).json({ message: "Invalid email or password" });
         }
 
-        // Generate JWT token
+        // Generate JWT token (use email or id for the payload, depending on your requirements)
         const token = jwt.sign(
-            { id: existingAdmin._id, username: existingAdmin.username },
-            process.env.JWT_SECRET_KEY, // Ensure this is available in your .env file
+            { id: existingAdmin._id, email: existingAdmin.email },  // Use email if userName is null
+            process.env.JWT_SECRET_KEY,
             { expiresIn: "1h" }
         );
 
-        res.status(200).json({ success: true, message: "Logged in successfully", token });
+        res.status(200).json({
+            success: true,
+            message: "Logged in successfully",
+            token
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

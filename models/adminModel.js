@@ -5,7 +5,7 @@ const adminSchema = new mongoose.Schema({
     email: {
         type: String,
         required: [true, "Please enter an email address"],
-        unique: true, // Ensure the email is unique
+        unique: true, 
         match: [/\S+@\S+\.\S+/, "Please provide a valid email address"] // Email format validation
     },
     password: {
