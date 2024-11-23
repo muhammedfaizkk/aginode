@@ -11,15 +11,20 @@ exports.signup = async (req, res) => {
             return res.status(400).json({ message: "Please fill all required fields" });
         }
 
+        // Ensure that username is not null or empty
+        if (!username.trim()) {
+            return res.status(400).json({ message: "Username cannot be empty" });
+        }
+
         // Check if the user already exists by email
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
+        const existingUserByEmail = await User.findOne({ email });
+        if (existingUserByEmail) {
             return res.status(400).json({ message: "User already exists with this email" });
         }
 
         // Check if the user already exists by username
-        const existingUsername = await User.findOne({ username });
-        if (existingUsername) {
+        const existingUserByUsername = await User.findOne({ username });
+        if (existingUserByUsername) {
             return res.status(400).json({ message: "Username already exists" });
         }
 
@@ -47,17 +52,18 @@ exports.signup = async (req, res) => {
             },
         });
     } catch (error) {
-        // Log the detailed error message for debugging
+        // Log the error for debugging
         console.error("Error during signup:", error);
 
-        // Send a more detailed error message
+        // Return detailed error message
         res.status(500).json({
             message: "An unexpected error occurred",
-            error: error.message,  // Return the error message for debugging purposes
+            error: error.message,  // Return the error message for debugging
             stack: error.stack,    // Optional: include the stack trace for debugging
         });
     }
 };
+
 
 
 exports.signin = async (req, res, next) => {
