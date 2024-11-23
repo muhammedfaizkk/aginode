@@ -2,7 +2,6 @@ const User = require("../models/userModel");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-
 exports.signup = async (req, res) => {
     try {
         const { username, email, password, role } = req.body;
@@ -48,11 +47,18 @@ exports.signup = async (req, res) => {
             },
         });
     } catch (error) {
-        // Handle any unexpected error
+        // Log the detailed error message for debugging
         console.error("Error during signup:", error);
-        res.status(500).json({ message: "An unexpected error occurred" });
+
+        // Send a more detailed error message
+        res.status(500).json({
+            message: "An unexpected error occurred",
+            error: error.message,  // Return the error message for debugging purposes
+            stack: error.stack,    // Optional: include the stack trace for debugging
+        });
     }
 };
+
 
 exports.signin = async (req, res, next) => {
     try {
