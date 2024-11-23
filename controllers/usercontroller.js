@@ -5,10 +5,10 @@ const jwt = require("jsonwebtoken");
 
 exports.signup = async (req, res) => {
     try {
-        const { userName, email, password, role } = req.body;
+        const { username, email, password, role } = req.body;
 
         // Validate required fields
-        if (!userName || !email || !password) {
+        if (!username || !email || !password) {
             return res.status(400).json({ message: "Please fill all required fields" });
         }
 
@@ -23,7 +23,7 @@ exports.signup = async (req, res) => {
 
         // Create a new user
         const user = new User({
-            userName: userName.trim(),
+            username: username.trim(),
             email: email.toLowerCase(),
             password: hashedPassword,
             role: role || 'user',
@@ -37,7 +37,7 @@ exports.signup = async (req, res) => {
             message: "User registered successfully",
             user: {
                 id: user._id,
-                userName: user.userName,
+                username: user.username,
                 email: user.email,
             },
         });
@@ -73,7 +73,7 @@ exports.signin = async (req, res, next) => {
 
         // Generate a JWT token
         const token = jwt.sign(
-            { id: user._id, userName: user.userName }, 
+            { id: user._id, username: user.username }, 
             process.env.JWT_SECRET_KEY,
             { expiresIn: "1d" }
         );
@@ -83,7 +83,7 @@ exports.signin = async (req, res, next) => {
             success: true,
             message: "Logged in successfully",
             user: {
-                userName: user.userName, 
+                username: user.username, 
                 _id: user._id,
                 role: user.role,
                 email: user.email
