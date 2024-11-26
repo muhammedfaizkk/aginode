@@ -174,3 +174,54 @@ exports.deleteProduct = async (req, res) => {
         });
     }
 };
+
+exports.updateProduct = async (req, res) => {
+    const { id } = req.params;
+    const { productName, originalPrice, currentPrice, specifications, category } = req.body;
+    const newImages = req.files ? req.files.map(file => file.path) : []; // Get new images if uploaded
+
+    try {
+        const product = await Product.findById(id);
+
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: "Product not found",
+            });
+        }
+
+        // Delete old images if new ones are provided
+        if (newImages.length > 0 && product.photographs.length > 0) {
+            const publicIds = product.photographs.map((url) => {
+                const parts = url.split('/');
+                const fileWithExtension = parts[parts.length - 1];
+                const publicId = fileWithExtension.split('.')[0];
+                const folder = parts[parts.length - 2];
+                return `${folder}/${publicId}`;
+            });
+            await deleteImagesWithRetry(publicIds);
+        }
+
+        // Update product details
+        product.productName = productName || product.productName;
+        product.originalPrice = originalPrice || product.originalPrice;
+        product.currentPrice = currentPrice || product.currentPrice;
+        product.specifications = specifications || product.specifications;
+        product.category = category || product.category;
+        if (newImages.length > 0) product.photographs = newImages;
+
+        const updatedProduct = await product.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Product updated successfully",
+            product: updatedProduct,
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "An error occurred while updating the product",
+            details: error.message,
+        });
+    }
+};
