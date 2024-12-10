@@ -47,7 +47,7 @@ exports.addProducts = async (req, res, next) => {
 
 exports.getAllproducts = async (req, res, next) => {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 12; // Set the limit to 12 products per page
+    const limit = parseInt(req.query.limit) || 12; 
     const skip = (page - 1) * limit;
 
     try {
@@ -69,7 +69,7 @@ exports.getAllproducts = async (req, res, next) => {
             success: true,
             message: "Products retrieved successfully",
             products,
-            totalPages: Math.ceil(totalCount / limit), // Calculate total number of pages
+            totalPages: Math.ceil(totalCount / limit), 
             currentPage: page // Current page number
         });
     } catch (error) {
