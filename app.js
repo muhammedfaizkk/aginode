@@ -6,6 +6,7 @@ const userRout = require('./routes/userRoute')
 const adminRout = require('./routes/adminRout')
 const ordersRoute = require('./routes/ordersRoute')
 const cartRoute = require('./routes/cartRoute')
+const shippingaddress = require('./routes/shippingaddress')
 
 
 app.use(express.json());
@@ -17,6 +18,7 @@ app.use(userRout)
 app.use(adminRout)
 app.use(ordersRoute)
 app.use(cartRoute)
+app.use(shippingaddress)
 app.use((err, req, res, next) => {
     res.send(err.message);
 });

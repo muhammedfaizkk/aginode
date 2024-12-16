@@ -1,19 +1,25 @@
 const Order = require('../models/ordersmodel');
+const ShippingAddress = require('../models/shippingAddmodel');
 
 
 exports.createOrder = async (req, res) => {
     try {
-        const { user, products, totalAmount, shippingAddress, contactNumber } = req.body;
+        const { user, products, totalAmount, addressId, contactNumber } = req.body;
 
-        if (!user || !products || !totalAmount || !shippingAddress || !contactNumber) {
+        if (!user || !products || !totalAmount || !addressId || !contactNumber) {
             return res.status(400).json({ message: "All fields are required" });
+        }
+
+        const addressExists = await ShippingAddress.findById(addressId);
+        if (!addressExists) {
+            return res.status(404).json({ message: "Address not found" });
         }
 
         const order = new Order({
             user,
             products,
             totalAmount,
-            shippingAddress,
+            addressId,
             contactNumber,
         });
 
@@ -28,6 +34,7 @@ exports.createOrder = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
 
 
 exports.updateOrderStatus = async (req, res) => {

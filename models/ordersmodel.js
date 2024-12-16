@@ -25,10 +25,10 @@ const orderSchema = new mongoose.Schema(
             type: Number,
             required: true,
         },
-        shippingAddress: {
-            type: String,
+        addressId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Address", // Reference to the Address model
             required: true,
-            trim: true,
         },
         contactNumber: {
             type: String,
@@ -42,7 +42,7 @@ const orderSchema = new mongoose.Schema(
         },
     },
     {
-        timestamps: true, // Automatically add `createdAt` and `updatedAt` fields
+        timestamps: true,
     }
 );
 
