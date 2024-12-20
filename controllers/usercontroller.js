@@ -5,7 +5,7 @@ const jwt = require("jsonwebtoken");
 exports.signup = async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
-        if (!name || !email || !password) {
+        if (!name || !email || !password || !role) {
             return res.status(400).json({ message: "Please fill all required fields" });
         }
         const existingUserByEmail = await Users.findOne({ email });
@@ -33,6 +33,7 @@ exports.signup = async (req, res) => {
                 id: user._id,
                 name: user.name,
                 email: user.email,
+                role:user.role
             },
         });
     } catch (error) {

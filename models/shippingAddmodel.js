@@ -16,7 +16,7 @@ const shippingAddressSchema = new mongoose.Schema({
         required: true,
         validate: {
             validator: function (v) {
-                return /^[0-9]{10}$/.test(v); // Example for a 10-digit number
+                return /^[0-9]{10}$/.test(v);
             },
             message: props => `${props.value} is not a valid phone number!`,
         },
