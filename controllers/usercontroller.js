@@ -48,6 +48,9 @@ exports.signup = async (req, res) => {
 
 
 exports.signin = async (req, res, next) => {
+
+    console.log(process.env.JWT_SECRET);
+    
     try {
         const { email, password } = req.body;
         if (!email || !password) {
@@ -71,7 +74,7 @@ exports.signin = async (req, res, next) => {
         // Generate a JWT token
         const token = jwt.sign(
             { id: user._id, name: user.name },
-            secretKey,
+            'fijsdkJJFKKJfsfskkj',
             { expiresIn: process.env.JWT_EXPIRY || '1d' } // Use environment variable or default to 1d
         );
 

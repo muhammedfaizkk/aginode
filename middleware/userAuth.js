@@ -9,7 +9,7 @@ const protectRoute = async (req, res, next) => {
     }
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET); 
+        const decoded = jwt.verify(token, 'fijsdkJJFKKJfsfskkj'); 
         req.user = await Users.findById(decoded.userId);
         if (!req.user) {
             return res.status(404).json({ message: 'User not found' });
