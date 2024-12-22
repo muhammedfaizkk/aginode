@@ -50,8 +50,6 @@ exports.signup = async (req, res) => {
 exports.signin = async (req, res, next) => {
     try {
         const { email, password } = req.body;
-
-    
         if (!email || !password) {
             return res.status(400).json({ message: "Please provide email and password" });
         }
@@ -61,27 +59,26 @@ exports.signin = async (req, res, next) => {
         if (!user) {
             return res.status(401).json({ message: "Invalid email or password" });
         }
-
-        // Compare the password with the stored hash
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(401).json({ message: "Invalid email or password" });
         }
 
-        // Generate a JWT token
+        // Get the JWT secret and expiration from environment variables
         const secretKey = process.env.JWT_SECRET_KEY;
         if (!secretKey) throw new Error("JWT_SECRET_KEY is not defined");
 
+        // Generate a JWT token
         const token = jwt.sign(
             { id: user._id, name: user.name },
             secretKey,
-            { expiresIn: "1d" }
+            { expiresIn: process.env.JWT_EXPIRY || '1d' } // Use environment variable or default to 1d
         );
 
-        // Send token as a HttpOnly cookie (optional for better security)
+        // Send token as an HttpOnly cookie (optional for better security)
         res.cookie("token", token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
+            secure: process.env.NODE_ENV === "production", // Only use in production for secure cookies
             sameSite: "strict",
             maxAge: 24 * 60 * 60 * 1000, // 1 day
         });
@@ -96,7 +93,7 @@ exports.signin = async (req, res, next) => {
                 role: user.role,
                 email: user.email,
             },
-            token, // Include the token in the response body
+            token, // Include the token in the response body (optional)
         });
     } catch (error) {
         console.error("Error during signin:", error);
