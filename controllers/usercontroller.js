@@ -51,14 +51,18 @@ exports.signin = async (req, res, next) => {
     try {
         const { email, password } = req.body;
 
-        // Validate email and password
+    
         if (!email || !password) {
             return res.status(400).json({ message: "Please provide email and password" });
         }
+
+        // Find the user by email
         const user = await Users.findOne({ email: email.toLowerCase() });
         if (!user) {
             return res.status(401).json({ message: "Invalid email or password" });
         }
+
+        // Compare the password with the stored hash
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(401).json({ message: "Invalid email or password" });
@@ -74,7 +78,7 @@ exports.signin = async (req, res, next) => {
             { expiresIn: "1d" }
         );
 
-        // Send token as a HttpOnly cookie
+        // Send token as a HttpOnly cookie (optional for better security)
         res.cookie("token", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
@@ -82,7 +86,7 @@ exports.signin = async (req, res, next) => {
             maxAge: 24 * 60 * 60 * 1000, // 1 day
         });
 
-        // Return the response with user data
+        // Return the response with user data and token
         res.status(200).json({
             success: true,
             message: "Logged in successfully",
@@ -92,10 +96,12 @@ exports.signin = async (req, res, next) => {
                 role: user.role,
                 email: user.email,
             },
+            token, // Include the token in the response body
         });
     } catch (error) {
         console.error("Error during signin:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 };
+
 
