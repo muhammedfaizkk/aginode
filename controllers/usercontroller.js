@@ -48,11 +48,12 @@ exports.signup = async (req, res) => {
 
 
 exports.signin = async (req, res, next) => {
-
-    console.log(process.env.JWT_SECRET);
+    console.log(process.env.JWT_SECRET_KEY); // Debug to see if the secret key is loaded properly
     
     try {
         const { email, password } = req.body;
+
+        // Validate email and password
         if (!email || !password) {
             return res.status(400).json({ message: "Please provide email and password" });
         }
@@ -62,20 +63,22 @@ exports.signin = async (req, res, next) => {
         if (!user) {
             return res.status(401).json({ message: "Invalid email or password" });
         }
+
+        // Compare the password with the stored hash
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(401).json({ message: "Invalid email or password" });
         }
 
-        // Get the JWT secret and expiration from environment variables
+        // Get the JWT secret from environment variables
         const secretKey = process.env.JWT_SECRET_KEY;
         if (!secretKey) throw new Error("JWT_SECRET_KEY is not defined");
 
         // Generate a JWT token
         const token = jwt.sign(
             { id: user._id, name: user.name },
-            'fijsdkJJFKKJfsfskkj',
-            { expiresIn: process.env.JWT_EXPIRY || '1d' } // Use environment variable or default to 1d
+            secretKey, // Use the environment variable
+            { expiresIn: process.env.JWT_EXPIRY || '1d' } // Default to 1 day if not set
         );
 
         // Send token as an HttpOnly cookie (optional for better security)
