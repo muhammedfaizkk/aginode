@@ -55,28 +55,34 @@ exports.signin = async (req, res, next) => {
         if (!email || !password) {
             return res.status(400).json({ message: "Please provide email and password" });
         }
-
-        // Find the user by email
         const user = await Users.findOne({ email: email.toLowerCase() });
-
         if (!user) {
             return res.status(401).json({ message: "Invalid email or password" });
         }
-
-        // Compare the password with the stored hash
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(401).json({ message: "Invalid email or password" });
         }
 
         // Generate a JWT token
+        const secretKey = process.env.JWT_SECRET_KEY;
+        if (!secretKey) throw new Error("JWT_SECRET_KEY is not defined");
+
         const token = jwt.sign(
             { id: user._id, name: user.name },
-            process.env.JWT_SECRET_KEY,
+            secretKey,
             { expiresIn: "1d" }
         );
 
-        // Return the response with user data and token
+        // Send token as a HttpOnly cookie
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+            maxAge: 24 * 60 * 60 * 1000, // 1 day
+        });
+
+        // Return the response with user data
         res.status(200).json({
             success: true,
             message: "Logged in successfully",
@@ -86,10 +92,10 @@ exports.signin = async (req, res, next) => {
                 role: user.role,
                 email: user.email,
             },
-            token,
         });
     } catch (error) {
         console.error("Error during signin:", error);
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: "Internal server error" });
     }
 };
+
