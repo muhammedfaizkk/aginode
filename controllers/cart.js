@@ -120,7 +120,14 @@ exports.getCart = async (req, res) => {
             return res.status(400).json({ message: "User ID is required" });
         }
 
+        // Log userId to debug
+        console.log('User ID:', userId);
+
+        // Find the cart for the user
         const cart = await Cart.findOne({ user: userId }).populate("items.product");
+
+        // Log cart to debug
+        console.log('Found Cart:', cart);
 
         if (!cart) {
             // Create a cart for the user if it doesn't exist
@@ -128,6 +135,10 @@ exports.getCart = async (req, res) => {
                 user: userId,
                 items: [],
             });
+
+            // Log newly created cart
+            console.log('New Cart Created:', newCart);
+
             return res.status(200).json({
                 success: true,
                 message: "Cart was created for you",
@@ -135,6 +146,7 @@ exports.getCart = async (req, res) => {
             });
         }
 
+        // Map cart items and format response
         const cartedProducts = cart.items.map(item => ({
             productId: item.product._id,
             name: item.product.name,
@@ -144,6 +156,7 @@ exports.getCart = async (req, res) => {
             image: item.product.images && item.product.images.length > 0 ? item.product.images[0] : null,
         }));
 
+        // Send response with cart data
         res.status(200).json({
             success: true,
             cartId: cart._id,
@@ -153,6 +166,7 @@ exports.getCart = async (req, res) => {
             products: cartedProducts,
         });
     } catch (error) {
+        console.error('Error:', error); // Log error for debugging
         res.status(500).json({ message: error.message });
     }
 };
