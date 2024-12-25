@@ -10,7 +10,6 @@ const protectRoute = async (req, res, next) => {
     }
 
     try {
-        // Verify token using JWT_SECRET_KEY from environment variables
         const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY); 
         
         // Find user using the id from the decoded token
