@@ -31,12 +31,25 @@ exports.addProduct = async (req, res) => {
     }
 };
 
-// Get All Products
 exports.getAllProducts = async (req, res) => {
     try {
-        const products = await Product.find();
+        
+        const page = parseInt(req.query.page) || 1; 
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+        const products = await Product.find().skip(skip).limit(limit);
+
+        const totalProducts = await Product.countDocuments();
+
         res.status(200).json({
             success: true,
+            pagination: {
+                totalProducts,
+                currentPage: page,
+                totalPages: Math.ceil(totalProducts / limit),
+                hasNextPage: page * limit < totalProducts,
+                hasPreviousPage: page > 1,
+            },
             products,
         });
     } catch (error) {
@@ -47,7 +60,7 @@ exports.getAllProducts = async (req, res) => {
     }
 };
 
-// Get Product by ID
+
 exports.getProductById = async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
