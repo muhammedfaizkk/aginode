@@ -1,13 +1,17 @@
 const Cart = require("../models/cartmodel");
 const Product = require('../models/ProudctModel')
 
+
+
 exports.addToCart = async (req, res) => {
     try {
-        const { userId, productId, quantity } = req.body;
+        const { productId, quantity } = req.body;
 
-        if (!userId || !productId || !quantity) {
-            return res.status(400).json({ message: "All fields are required" });
+        if (!productId || !quantity) {
+            return res.status(400).json({ message: "Product ID and quantity are required" });
         }
+
+        const userId = req.user._id; // Get userId from the protected route
 
         let cart = await Cart.findOne({ user: userId });
 
@@ -24,7 +28,6 @@ exports.addToCart = async (req, res) => {
             );
 
             if (existingItem) {
-    
                 existingItem.quantity += quantity;
             } else {
                 cart.items.push({ product: productId, quantity });
@@ -39,6 +42,7 @@ exports.addToCart = async (req, res) => {
     }
 };
 
+// Update product quantity in the cart
 exports.updateCartItemQuantity = async (req, res) => {
     try {
         const { cartItemId } = req.params;
@@ -64,7 +68,7 @@ exports.updateCartItemQuantity = async (req, res) => {
     }
 };
 
-
+// Remove product from cart
 exports.removeCartItem = async (req, res) => {
     try {
         const { cartItemId } = req.params;
@@ -85,11 +89,10 @@ exports.removeCartItem = async (req, res) => {
     }
 };
 
-
-
+// Clear all items in the cart
 exports.clearCart = async (req, res) => {
     try {
-        const { userId } = req.body;
+        const userId = req.user._id; // Get userId from the protected route
 
         const cart = await Cart.findOneAndUpdate(
             { user: userId },
@@ -106,19 +109,18 @@ exports.clearCart = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+// Get cart details
 exports.getCart = async (req, res) => {
     try {
-        const { userId } = req.params; // Access userId from URL params
-   
-        if (!userId) {
-            return res.status(400).json({ message: "User id not provided" });
-        }
+        const userId = req.user._id; 
 
         const cart = await Cart.findOne({ user: userId }).populate("items.product");
 
         if (!cart) {
             return res.status(404).json({ message: "Cart not found" });
         }
+
         const cartedProducts = cart.items.map(item => ({
             productId: item.product._id,
             name: item.product.name,
@@ -140,4 +142,3 @@ exports.getCart = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
-
