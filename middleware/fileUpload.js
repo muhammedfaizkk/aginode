@@ -1,22 +1,31 @@
 const multer = require('multer');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const cloudinary = require('cloudinary').v2;
 
-// Configure Cloudinary
-cloudinary.config({
-    cloud_name:'djjo6evky',
-    api_key: 968835199376537,
-    api_secret: 'kCOm5DSVGymQ85gJJ7nsdJayWZI',
-});
-const storage = new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: {
-        folder: 'agi',
-        allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'tiff'],  // Allowed image formats
-        public_id: (req, file) => file.originalname.split('.')[0] + '-' + Date.now(),  // Create a unique name for the image
+// Set storage configuration for the uploaded files
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/');  // Directory where files will be stored
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + '-' + file.originalname);  // Unique filename
     },
 });
 
-const upload = multer({ storage });
+// Set file upload limits and validation
+const upload = multer({
+    storage,
+    limits: {
+        fileSize: 3 * 1024 * 1024,  // Max file size 3MB
+    },
+    fileFilter: (req, file, cb) => {
+        const filetypes = /jpeg|jpg|png|gif|webp/;  // Added 'webp' to the allowed file types
+        const mimeType = filetypes.test(file.mimetype);
+        const extname = filetypes.test(file.originalname.toLowerCase());
+
+        if (mimeType && extname) {
+            return cb(null, true);  // Accept the file
+        }
+        cb(new Error("Invalid file type. Only jpeg, jpg, png, gif, and webp images are allowed."));  // Reject file with appropriate error message
+    },
+});
 
 module.exports = upload;

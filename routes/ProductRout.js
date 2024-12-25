@@ -1,13 +1,14 @@
 const express = require("express");
-const { addProducts, deleteProduct, getAllproducts, getProduct , updateProduct} = require("../controllers/ProductController");
+const { addProduct, deleteProduct, getAllProducts, getProductById, updateProduct } = require("../controllers/ProductController");  // Ensure the path and functions are correct
 const upload = require("../middleware/fileUpload");
 
 const router = express.Router();
 
-router.route('/api/addproducts').post(upload.array("photographs", 4), addProducts);
+// Define routes
+router.route('/api/addproducts').post(upload.array("photographs", 4), addProduct);
 router.route('/api/productsdelete/:id').delete(deleteProduct);
-router.route('/api/getAllproducts').get(getAllproducts);
-router.route('/api/getProduct/:id').get(getProduct);
+router.route('/api/getAllproducts').get(getAllProducts);
+router.route('/api/getProduct/:id').get(getProductById);
 router.route('/api/updateproduct/:id').put(upload.array("photographs", 4), updateProduct);
 
 module.exports = router;
