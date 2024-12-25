@@ -48,61 +48,61 @@ exports.signup = async (req, res) => {
 
 
 exports.signin = async (req, res, next) => {
-    console.log(process.env.JWT_SECRET_KEY); // Debug to see if the secret key is loaded properly
-    
     try {
         const { email, password } = req.body;
-
-        // Validate email and password
         if (!email || !password) {
-            return res.status(400).json({ message: "Please provide email and password" });
+            return res.status(400).json({ message: "Email and password are required" });
         }
-
-        // Find the user by email
         const user = await Users.findOne({ email: email.toLowerCase() });
         if (!user) {
             return res.status(401).json({ message: "Invalid email or password" });
         }
-
-        // Compare the password with the stored hash
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
             return res.status(401).json({ message: "Invalid email or password" });
         }
 
-        // Get the JWT secret from environment variables
         const secretKey = process.env.JWT_SECRET_KEY;
-        if (!secretKey) throw new Error("JWT_SECRET_KEY is not defined");
+        const tokenExpiry = process.env.JWT_EXPIRY || "1d";
+
+        if (!secretKey) {
+            console.error("JWT_SECRET_KEY is not defined in environment variables");
+            return res.status(500).json({ message: "Internal server configuration error" });
+        }
 
         // Generate a JWT token
         const token = jwt.sign(
-            { id: user._id, name: user.name },
-            secretKey, // Use the environment variable
-            { expiresIn: process.env.JWT_EXPIRY || '1d' } // Default to 1 day if not set
+            {
+                id: user._id,
+                name: user.name,
+                role: user.role,
+            },
+            secretKey,
+            { expiresIn: tokenExpiry }
         );
 
-        // Send token as an HttpOnly cookie (optional for better security)
+        // Set token as an HttpOnly cookie
         res.cookie("token", token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production", // Only use in production for secure cookies
-            sameSite: "strict",
-            maxAge: 24 * 60 * 60 * 1000, // 1 day
+            secure: process.env.NODE_ENV === "production", // Use HTTPS in production
+            sameSite: "strict", // Prevent CSRF
+            maxAge: 24 * 60 * 60 * 1000, // Token validity in milliseconds (1 day)
         });
 
-        // Return the response with user data and token
+        // Send response with user info and token
         res.status(200).json({
             success: true,
-            message: "Logged in successfully",
+            message: "Login successful",
             user: {
+                id: user._id,
                 name: user.name,
-                _id: user._id,
-                role: user.role,
                 email: user.email,
+                role: user.role,
             },
-            token, // Include the token in the response body (optional)
+            token, // Optional: send token in the body as well
         });
     } catch (error) {
-        console.error("Error during signin:", error);
+        console.error("Error during sign-in:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 };
