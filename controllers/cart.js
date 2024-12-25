@@ -108,12 +108,8 @@ exports.clearCart = async (req, res) => {
 };
 exports.getCart = async (req, res) => {
     try {
-        const { userId } = req.query; // Extract the user ID from the query parameters
-
-        // Find the cart for the user and populate the product details in items
+        const { userId } = req.query;
         const cart = await Cart.findOne({ user: userId }).populate("items.product");
-
-        // If no cart exists, return a 404 response
         if (!cart) {
             return res.status(404).json({ message: "Cart not found" });
         }
@@ -125,7 +121,7 @@ exports.getCart = async (req, res) => {
             price: item.product.price,
             quantity: item.quantity,
             total: item.quantity * item.product.price,
-            image: item.product.images?.[0], // Send the first image, if available
+            image: item.product.images?.[0],
         }));
 
         // Send the cart and the carted products in the response
