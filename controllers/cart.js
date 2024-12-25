@@ -113,12 +113,26 @@ exports.clearCart = async (req, res) => {
 // Get cart details
 exports.getCart = async (req, res) => {
     try {
-        const userId = req.user._id; 
+        const userId = req.user._id; // Get userId from the protected route
+
+        // Check if userId is valid
+        if (!userId) {
+            return res.status(400).json({ message: "User ID is required" });
+        }
 
         const cart = await Cart.findOne({ user: userId }).populate("items.product");
 
         if (!cart) {
-            return res.status(404).json({ message: "Cart not found" });
+            // Create a cart for the user if it doesn't exist
+            const newCart = await Cart.create({
+                user: userId,
+                items: [],
+            });
+            return res.status(200).json({
+                success: true,
+                message: "Cart was created for you",
+                cart: newCart,
+            });
         }
 
         const cartedProducts = cart.items.map(item => ({
@@ -142,3 +156,4 @@ exports.getCart = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
