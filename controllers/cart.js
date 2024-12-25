@@ -108,33 +108,36 @@ exports.clearCart = async (req, res) => {
 };
 exports.getCart = async (req, res) => {
     try {
-        const { userId } = req.query;
+        const { userId } = req.params; // Access userId from URL params
+   
+        if (!userId) {
+            return res.status(400).json({ message: "User id not provided" });
+        }
+
         const cart = await Cart.findOne({ user: userId }).populate("items.product");
+
         if (!cart) {
             return res.status(404).json({ message: "Cart not found" });
         }
-
-        // Extract the products from the cart items
         const cartedProducts = cart.items.map(item => ({
             productId: item.product._id,
             name: item.product.name,
             price: item.product.price,
             quantity: item.quantity,
             total: item.quantity * item.product.price,
-            image: item.product.images?.[0],
+            image: item.product.images && item.product.images.length > 0 ? item.product.images[0] : null,
         }));
 
-        // Send the cart and the carted products in the response
         res.status(200).json({
             success: true,
             cartId: cart._id,
             user: cart.user,
-            totalQuantity: cart.items.reduce((acc, item) => acc + item.quantity, 0), // Total quantity of items
-            totalPrice: cartedProducts.reduce((acc, item) => acc + item.total, 0), // Total price of items
+            totalQuantity: cart.items.reduce((acc, item) => acc + item.quantity, 0),
+            totalPrice: cartedProducts.reduce((acc, item) => acc + item.total, 0),
             products: cartedProducts,
         });
     } catch (error) {
-        // Send a 500 response in case of a server error
         res.status(500).json({ message: error.message });
     }
 };
+
