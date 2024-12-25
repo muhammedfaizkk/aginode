@@ -2,8 +2,8 @@ const mongoose = require("mongoose");
 
 const databaseConnection = () => {
   mongoose.connect(process.env.DB_URI, {
-    serverSelectionTimeoutMS: 15000, // 15 seconds
-    connectTimeoutMS: 15000,         // 15 seconds
+    serverSelectionTimeoutMS: 50000, // 15 seconds
+    connectTimeoutMS: 50000,         // 15 seconds
     useNewUrlParser: true,           // Use the new parser (although deprecated, still supported for now)
     useUnifiedTopology: true        // Use the new topology engine
   })
