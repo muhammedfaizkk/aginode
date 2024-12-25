@@ -7,30 +7,25 @@ exports.adminSignup = async (req, res) => {
     try {
         const { email, password, role } = req.body;
 
-        // Validate input
         if (!email || !password) {
             return res.status(400).json({ message: "Please provide email and password" });
         }
 
-        // Check if admin already exists
         const existingAdmin = await Admin.findOne({ email });
         if (existingAdmin) {
             return res.status(400).json({ message: "Admin with this email already exists" });
         }
 
-        // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Create a new admin
         const newAdmin = new Admin({
             email,
             password: hashedPassword,
-            role: role || "admin", // Default role is 'admin'
+            role: role || "admin",
         });
 
         await newAdmin.save();
 
-        // Generate a token
         const token = jwt.sign(
             { id: newAdmin._id, email: newAdmin.email },
             process.env.JWT_SECRET_KEY,
@@ -82,44 +77,6 @@ exports.adminSignin = async (req, res) => {
     }
 };
 
-// Create Admin
-exports.createAdmin = async (req, res) => {
-    try {
-        const { email, password, role } = req.body;
-
-        if (!email || !password) {
-            return res.status(400).json({ message: "Please provide all required fields" });
-        }
-
-        const existingAdmin = await Admin.findOne({ email });
-        if (existingAdmin) {
-            return res.status(400).json({ message: "Admin with this email already exists" });
-        }
-
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        const newAdmin = new Admin({
-            email,
-            password: hashedPassword,
-            role,
-        });
-
-        await newAdmin.save();
-
-        res.status(201).json({
-            success: true,
-            message: "Admin created successfully",
-            admin: {
-                id: newAdmin._id,
-                email: newAdmin.email,
-                role: newAdmin.role,
-            },
-        });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
 // Update Admin
 exports.updateAdmin = async (req, res) => {
     try {
@@ -145,6 +102,25 @@ exports.updateAdmin = async (req, res) => {
                 email: updatedAdmin.email,
                 role: updatedAdmin.role,
             },
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+exports.deleteAdmin = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const deletedAdmin = await Admin.findByIdAndDelete(id);
+
+        if (!deletedAdmin) {
+            return res.status(404).json({ message: "Admin not found" });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Admin deleted successfully",
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
