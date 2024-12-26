@@ -39,32 +39,34 @@ exports.addToFavorites = async (req, res) => {
 
 exports.getFavorites = async (req, res) => {
     try {
-        const userId = req.user._id;
-        const favorite = await Favorite.findOne({ user: userId }).populate('products.product');
+        const userId = req.user._id; // Extract user ID from the request
 
-        // If no favorites are found, send a 404 response
-        if (!favorite) {
+        // Step 1: Find the user's wishlist
+        const favorite = await Favorite.findOne({ user: userId });
+
+        // If no wishlist is found, send a 404 response
+        if (!favorite || favorite.products.length === 0) {
             return res.status(404).json({ 
                 success: false, 
                 message: "No wishlisted products found." 
             });
         }
 
-        // Map the products array to return all product details
-        const wishlistedProducts = favorite.products.map((item) => ({
-            productId: item.product._id,
-            name: item.product.name,
-            price: item.product.price,
-            description: item.product.description,
-            category: item.product.category,
-            images: item.product.images,
-            stock: item.product.stock,
-            createdAt: item.product.createdAt,
-            updatedAt: item.product.updatedAt,
-            ...item.product._doc, // Spread all other fields dynamically
-        }));
+        // Step 2: Extract product IDs from the wishlist
+        const productIds = favorite.products.map(item => item.product);
 
-        // Send the response with all details of wishlisted products
+        // Step 3: Fetch all product details using the product IDs
+        const wishlistedProducts = await Product.find({ _id: { $in: productIds } });
+
+        // If no products are found, return a 404 response
+        if (wishlistedProducts.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "No details found for wishlisted products."
+            });
+        }
+
+        // Step 4: Send the response with all product details
         res.status(200).json({
             success: true,
             totalProducts: wishlistedProducts.length,
