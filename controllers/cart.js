@@ -12,7 +12,7 @@ exports.addToCart = async (req, res) => {
             return res.status(400).json({ message: "Invalid product ID or quantity. Quantity must be between 1 and 100." });
         }
 
-        const userId = req.user._id;
+        const userId = req.user._id; // Assuming `req.user._id` is populated after authentication
 
         // Check if product exists
         const productExists = await Product.findById(productId);
@@ -24,6 +24,7 @@ exports.addToCart = async (req, res) => {
         let cart = await Cart.findOne({ user: userId });
 
         if (!cart) {
+            // If cart doesn't exist, create a new one
             cart = await Cart.create({
                 user: userId,
                 items: [{ product: productId, quantity }],
@@ -35,11 +36,19 @@ exports.addToCart = async (req, res) => {
             if (existingItem) {
                 // Update quantity
                 existingItem.quantity += quantity;
+
+                // Ensure total quantity for product does not exceed 100
                 if (existingItem.quantity > 100) {
                     return res.status(400).json({ message: "Total quantity for a product cannot exceed 100." });
                 }
+
+                // Ensure quantity is at least 1
+                if (existingItem.quantity < 1) {
+                    existingItem.quantity = 1;  // Set quantity to 1 if less than 1
+                }
             } else {
-                cart.items.push({ product: productId, quantity });
+                // If product is not in the cart, add it with the specified quantity
+                cart.items.push({ product: productId, quantity: Math.max(1, quantity) }); // Ensure minimum quantity is 1
             }
 
             // Save updated cart
