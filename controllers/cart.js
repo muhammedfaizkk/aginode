@@ -4,44 +4,52 @@ const Product = require('../models/ProudctModel')
 
 
 exports.addItemToCart = async (req, res) => {
-  try {
-    const { productId, quantity } = req.body;
-    const userId = req.user._id;  // Use the user ID from the request
-
-    // Find the product
-    const product = await Product.findById(productId);
-    if (!product) {
-      return res.status(404).json({ message: "Product not found" });
+    try {
+      const { productId, quantity } = req.body;
+      const userId = req.user._id;
+  
+      // Validate the product ID and quantity
+      if (!productId || !quantity || quantity <= 0) {
+        return res.status(400).json({ message: "Invalid product ID or quantity" });
+      }
+  
+      // Check if the product exists
+      const product = await Product.findById(productId);
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+  
+      // Find the user's cart
+      let cart = await Cart.findOne({ user: userId });
+      if (!cart) {
+        // If the cart does not exist, create a new one
+        cart = new Cart({ user: userId, items: [] });
+      }
+  
+      // Check if the product is already in the cart
+      const existingItem = cart.items.find(
+        (item) => item.product.toString() === productId
+      );
+  
+      if (existingItem) {
+        // If the item exists, return an error
+        return res.status(400).json({ message: "Product is already in the cart" });
+      } else {
+        // If the item does not exist, add it to the cart
+        cart.items.push({ product: productId, quantity });
+      }
+  
+      // Save the updated cart
+      await cart.save();
+  
+      // Respond with the updated cart
+      res.status(200).json(cart);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Error adding item to cart" });
     }
-
-    // Find or create the cart
-    let cart = await Cart.findOne({ user: userId });
-    if (!cart) {
-      // If the cart does not exist, create a new one
-      cart = new Cart({ user: userId, items: [] });
-    }
-
-    // Check if the product is already in the cart
-    const existingItem = cart.items.find(item => item.product.toString() === productId);
-    
-    if (existingItem) {
-      // If the item exists, update the quantity
-      existingItem.quantity += quantity;
-    } else {
-      // If the item does not exist, add it to the cart
-      cart.items.push({ product: productId, quantity });
-    }
-
-    // Save the updated cart
-    await cart.save();
-
-    // Respond with the updated cart
-    res.status(200).json(cart);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error adding item to cart" });
-  }
-};
+  };
+  
 
 
 
