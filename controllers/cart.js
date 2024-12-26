@@ -6,45 +6,33 @@ const Product = require('../models/ProudctModel')
 exports.addToCart = async (req, res) => {
     try {
         const { productId, quantity } = req.body;
-
-        // Validate input
         if (!productId || !Number.isInteger(quantity) || quantity <= 0 || quantity > 100) {
             return res.status(400).json({ message: "Invalid product ID or quantity. Quantity must be between 1 and 100." });
         }
+        const userId = req.user._id;
 
-        const userId = req.user._id; // Assuming `req.user._id` is populated after authentication
-
-        // Check if product exists
         const productExists = await Product.findById(productId);
         if (!productExists) {
             return res.status(404).json({ message: "Product not found" });
         }
-
-        // Retrieve or create user's cart
         let cart = await Cart.findOne({ user: userId });
 
         if (!cart) {
-            // If cart doesn't exist, create a new one
             cart = await Cart.create({
                 user: userId,
                 items: [{ product: productId, quantity }],
             });
         } else {
-            // Check if product already exists in the cart
             const existingItem = cart.items.find((item) => item.product.toString() === productId);
 
             if (existingItem) {
-                // Update quantity
                 existingItem.quantity += quantity;
-
-                // Ensure total quantity for product does not exceed 100
                 if (existingItem.quantity > 100) {
                     return res.status(400).json({ message: "Total quantity for a product cannot exceed 100." });
                 }
 
-                // Ensure quantity is at least 1
                 if (existingItem.quantity < 1) {
-                    existingItem.quantity = 1;  // Set quantity to 1 if less than 1
+                    existingItem.quantity = 1;  
                 }
             } else {
                 // If product is not in the cart, add it with the specified quantity
