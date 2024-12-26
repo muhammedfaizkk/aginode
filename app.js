@@ -15,13 +15,15 @@ app.use(express.json());
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/api/products', ProductRout);
-app.use('/api/users', userRout);
-app.use('/api/admin', adminRout);
-app.use('/api/orders', ordersRoute);
-app.use('/api/cart', cartRoute);
-app.use('/api/shipping', shippingaddress);
-app.use('/api/favorites', favoriteRoutes);
+app.use(ProductRout)
+app.use(userRout)
+app.use(adminRout)
+app.use(ordersRoute)
+app.use(cartRoute)
+app.use(shippingaddress)
+app.use(favoriteRoutes)
+
+
 
 
 app.use((err, req, res, next) => {
