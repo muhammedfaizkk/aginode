@@ -1,7 +1,6 @@
 const Favorite = require('../models/favoriteModel');
 const Product = require('../models/ProudctModel');
 
-// Add a product to the favorites
 exports.addToFavorites = async (req, res) => {
     try {
         const { productId } = req.body;
@@ -37,29 +36,46 @@ exports.addToFavorites = async (req, res) => {
     }
 };
 
+
 exports.getFavorites = async (req, res) => {
     try {
-        const userId = req.user._id; 
-
+        const userId = req.user._id;
         const favorite = await Favorite.findOne({ user: userId }).populate('products.product');
 
+        // If no favorites are found, send a 404 response
         if (!favorite) {
-            return res.status(404).json({ message: "No favorites found" });
+            return res.status(404).json({ 
+                success: false, 
+                message: "No wishlisted products found." 
+            });
         }
 
-        const favoriteProducts = favorite.products.map((item) => ({
+        // Map the products array to return all product details
+        const wishlistedProducts = favorite.products.map((item) => ({
             productId: item.product._id,
             name: item.product.name,
             price: item.product.price,
-            image: item.product.images && item.product.images.length > 0 ? item.product.images[0] : null,
+            description: item.product.description,
+            category: item.product.category,
+            images: item.product.images,
+            stock: item.product.stock,
+            createdAt: item.product.createdAt,
+            updatedAt: item.product.updatedAt,
+            ...item.product._doc, // Spread all other fields dynamically
         }));
 
+        // Send the response with all details of wishlisted products
         res.status(200).json({
             success: true,
-            favorites: favoriteProducts,
+            totalProducts: wishlistedProducts.length,
+            wishlistedProducts,
         });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        // Handle any errors
+        res.status(500).json({ 
+            success: false, 
+            message: error.message 
+        });
     }
 };
 
