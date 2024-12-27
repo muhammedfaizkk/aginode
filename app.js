@@ -14,7 +14,7 @@ require('dotenv').config();
 app.use(express.json());
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); 
 app.use(ProductRout)
 app.use(userRout)
 app.use(adminRout)
