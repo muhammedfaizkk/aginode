@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const Product = require("./ProudctModel"); // Ensure the Product model is imported
+const Product = require("./ProudctModel"); 
 
 const cartSchema = new mongoose.Schema(
   {

@@ -2,15 +2,13 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Resolve the uploads directory path relative to the middleware folder
+
 const uploadsPath = path.resolve(__dirname, '../uploads');
 
-// Ensure the uploads directory exists
 if (!fs.existsSync(uploadsPath)) {
     fs.mkdirSync(uploadsPath, { recursive: true });
 }
 
-// Multer storage configuration
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, uploadsPath);
