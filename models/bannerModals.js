@@ -1,4 +1,3 @@
-// models/bannerModel.js
 const mongoose = require('mongoose');
 
 const bannerSchema = new mongoose.Schema({
@@ -6,10 +5,12 @@ const bannerSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  images: {
-    type: String, // URL or path to the image
-    required: true,
-  },
+  images: [
+    {
+      type: String, // Store multiple image paths
+      required: true,
+    },
+  ],
 }, {
   timestamps: true,
 });
