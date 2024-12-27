@@ -3,16 +3,16 @@ const Banner = require('../models/bannerModals');
 exports.createBanner = async (req, res) => {
   try {
     const { title } = req.body;
-    const image = req.file ? req.file.path : ''; // Get the image path from the file
+    const images = req.files.map((file) => file.path);
 
-    if (!image) {
-      return res.status(400).json({ success: false, message: 'Image is required' });
+    if (images.length === 0) {
+      return res.status(400).json({ success: false, message: 'At least one image is required' });
     }
 
     // Create a new banner
     const newBanner = new Banner({
       title,
-      image, // Store the image path
+      images, // Store array of image paths
     });
 
     await newBanner.save();
@@ -25,6 +25,7 @@ exports.createBanner = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 // Get all banners
 exports.getBanners = async (req, res) => {
