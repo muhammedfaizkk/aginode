@@ -119,24 +119,20 @@ exports.clearCart = async (req, res) => {
     }
 };
 
-
-
 exports.getCart = async (req, res) => {
   try {
-    const userId = req.user._id; // Assuming the user's ID is available in `req.user`
-
-    // Find the user's cart by userId
+    const userId = req.user._id;
     const cart = await Cart.findOne({ user: userId });
-
-    // If no cart is found, return a 404 response
     if (!cart) {
       return res.status(404).json({ message: "Cart not found" });
     }
 
-    // Fetch all the product details for the carted products
+    
     const productPromises = cart.items.map(async (item) => {
-      const product = await Product.findById(item.product); // Fetch each product by ID
+      console.log(`Fetching product with ID: ${item.product}`);
+      const product = await Product.findById(item.product); 
       if (!product) {
+        console.error(`Product not found for ID: ${item.product}`); 
         throw new Error(`Product not found for ID: ${item.product}`);
       }
       return {
@@ -158,6 +154,7 @@ exports.getCart = async (req, res) => {
     res.status(500).json({ message: "Error fetching cart", error: error.message });
   }
 };
+
 
   
 
