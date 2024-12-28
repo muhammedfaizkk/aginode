@@ -8,12 +8,9 @@ exports.addItemToCart = async (req, res) => {
       const { productId, quantity } = req.body;
       const userId = req.user._id;
   
-      // Validate the product ID and quantity
       if (!productId || !quantity || quantity <= 0) {
         return res.status(400).json({ message: "Invalid product ID or quantity" });
       }
-  
-      // Check if the product exists
       const product = await Product.findById(productId);
       if (!product) {
         return res.status(404).json({ message: "Product not found" });
@@ -124,49 +121,47 @@ exports.clearCart = async (req, res) => {
 
 
 
+const Product = require('../models/ProductModel'); // Correct path to your Product model
+const Cart = require('../models/CartModel'); // Assuming you have a Cart model
+
 exports.getCart = async (req, res) => {
-    try {
-      const userId = req.user._id; // Assuming `req.user` contains authenticated user details
-      const cart = await Cart.findOne({ user: userId });
-  
-      if (!cart || cart.items.length === 0) {
-        return res.status(404).json({ success: false, message: 'No products in cart' });
-      }
-  
-      const productDetails = await Promise.all(
-        cart.items.map(async (item) => {
-          const product = await Product.findById(item.productId); // Find the product by its ID
-          if (product) {
-            return {
-              productId: product._id,
-              name: product.name, // Assuming the product model has a 'name' field
-              price: product.price, // Assuming the product model has a 'price' field
-              quantity: item.quantity, // Quantity from the cart
-            };
-          }
-          return null; // If product not found, return null
-        })
-      );
-  
-      // Filter out null products
-      const filteredProducts = productDetails.filter((product) => product !== null);
-  
-      if (filteredProducts.length === 0) {
-        return res.status(404).json({ success: false, message: 'No valid products in cart' });
-      }
-  
-      res.status(200).json({
-        success: true,
-        cart: {
-          items: filteredProducts,
-        },
-      });
-    } catch (error) {
-      console.error('Error in getCart:', error.message);
-      res.status(500).json({ success: false, message: 'Internal server error' });
+  try {
+    const userId = req.user._id; // Assuming the user's ID is available in `req.user`
+
+    // Find the user's cart by userId
+    const cart = await Cart.findOne({ user: userId });
+
+    // If no cart is found, return a 404 response
+    if (!cart) {
+      return res.status(404).json({ message: "Cart not found" });
     }
-  };
-  
+
+    // Fetch all the product details for the carted products
+    const productPromises = cart.items.map(async (item) => {
+      const product = await Product.findById(item.product); // Fetch each product by ID
+      if (!product) {
+        throw new Error(`Product not found for ID: ${item.product}`);
+      }
+      return {
+        product: product,   // Product details
+        quantity: item.quantity,  // Quantity from the cart
+      };
+    });
+
+    // Wait for all product details to be fetched
+    const populatedItems = await Promise.all(productPromises);
+
+    // Respond with the populated cart items
+    res.status(200).json({
+      message: "Cart fetched successfully",
+      cart: populatedItems, // Send the populated items with product details and quantity
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error fetching cart", error: error.message });
+  }
+};
+
   
 
   
