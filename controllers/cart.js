@@ -125,41 +125,44 @@ exports.clearCart = async (req, res) => {
 
 
 exports.getCart = async (req, res) => {
-  try {
-    const userId = req.user._id; // Assuming `req.user` contains authenticated user details
-    const cart = await Cart.findOne({ user: userId }).populate('items.product');
+    try {
+      const userId = req.user._id; // Assuming `req.user` contains authenticated user details
+      const cart = await Cart.findOne({ user: userId });
+  
+      if (!cart || cart.items.length === 0) {
+        return res.status(404).json({ success: false, message: 'No products in cart' });
+      }
 
-    if (!cart) {
-      return res.status(404).json({ success: false, message: 'Cart not found' });
+      const productDetails = await Promise.all(
+        cart.items.map(async (item) => {
+          const product = await Product.findById(item.productId); // Find the product by its ID
+          if (product) {
+            return {
+              productId: product._id,
+              name: product.name, // Assuming the product model has a 'name' field
+              price: product.price, // Assuming the product model has a 'price' field
+              quantity: item.quantity, // Quantity from the cart
+            };
+          }
+          return null; // If product not found, return null
+        })
+      );
+  
+      // Filter out null values (in case some product IDs don't exist)
+      const filteredProducts = productDetails.filter((product) => product !== null);
+  
+      res.status(200).json({
+        success: true,
+        cart: {
+          items: filteredProducts,
+        },
+      });
+    } catch (error) {
+      console.error('Error in getCart:', error.message);
+      res.status(500).json({ success: false, message: 'Internal server error' });
     }
-
-    // Fetch all products in the system
-    const allProducts = await Product.find();
-
-    // Filter out items with missing products in the cart
-    const filteredItems = cart.items.filter((item) => item.product !== null);
-
-    // Format cart response
-    const formattedCart = {
-      ...cart._doc, // Spread the original cart object
-      items: filteredItems.map((item) => ({
-        productId: item.product._id,
-        name: item.product.name, // Assuming product has a 'name' field
-        price: item.product.price, // Assuming product has a 'price' field
-        quantity: item.quantity,
-      })),
-    };
-
-    res.status(200).json({
-      success: true,
-      cart: formattedCart,
-      products: allProducts, // Include all products in the response
-    });
-  } catch (error) {
-    console.error('Error in getCart:', error.message);
-    res.status(500).json({ success: false, message: 'Internal server error' });
-  }
-};
+  };
+  
 
   
 
