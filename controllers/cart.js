@@ -125,56 +125,33 @@ exports.clearCart = async (req, res) => {
 // Get cart details
 exports.getCart = async (req, res) => {
     try {
-        const userId = req.user._id; 
-
-        if (!userId) {
-            return res.status(400).json({ message: "User ID is required" });
-        }
-       
-        const cart = await Cart.findOne({ user: userId }).populate("items.product");
-
-        console.log("Found Cart:", cart); // Debug log
-
-        if (!cart) {
-            // If no cart exists, create a new empty cart for the user
-            const newCart = await Cart.create({ user: userId, items: [] });
-
-            console.log("New Cart Created:", newCart); // Debug log
-
-            return res.status(200).json({
-                success: true,
-                message: "A new cart has been created for you.",
-                cart: newCart,
-            });
-        }
-
-        // Map cart items for the response
-        const cartedProducts = cart.items.map((item) => ({
-            productId: item.product._id,
-            name: item.product.name || "Unknown Product",
-            price: item.product.price || 0,
-            quantity: item.quantity,
-            total: item.quantity * (item.product.price || 0),
-            image: item.product.images?.[0] || null,
-        }));
-
-        // Calculate total quantity and price
-        const totalQuantity = cart.items.reduce((acc, item) => acc + item.quantity, 0);
-        const totalPrice = cartedProducts.reduce((acc, item) => acc + item.total, 0);
-
-        // Return cart data
-        res.status(200).json({
-            success: true,
-            cartId: cart._id,
-            user: cart.user,
-            totalQuantity,
-            totalPrice,
-            products: cartedProducts,
-        });
+      const userId = req.user._id; // Assuming `req.user` contains authenticated user details
+      const cart = await Cart.findOne({ user: userId }).populate('items.product');
+  
+      if (!cart) {
+        return res.status(404).json({ success: false, message: 'Cart not found' });
+      }
+  
+      // Filter out items with missing products
+      const filteredItems = cart.items.filter((item) => item.product !== null);
+  
+      // Format response to include only necessary fields
+      const formattedCart = {
+        ...cart._doc, // Spread the original cart object
+        items: filteredItems.map((item) => ({
+          productId: item.product._id,
+          name: item.product.name, // Assuming product has a 'name' field
+          price: item.product.price, // Assuming product has a 'price' field
+          quantity: item.quantity,
+        })),
+      };
+  
+      res.status(200).json({ success: true, cart: formattedCart });
     } catch (error) {
-        console.error("Error in getCart:", error); // Debug log
-        res.status(500).json({ message: "Internal server error" });
+      console.error('Error in getCart:', error.message);
+      res.status(500).json({ success: false, message: 'Internal server error' });
     }
-};
+  };
+  
 
 
