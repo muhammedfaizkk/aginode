@@ -123,43 +123,57 @@ exports.clearCart = async (req, res) => {
 };
 
 
-const getCart = async (req, res) => {
+exports.getCart = async (req, res) => {
   try {
-    const userId = req.user._id; // Get user ID from the authenticated request
+    const userId = req.user._id; // Extract user ID from authenticated request
 
-    // Find the cart for the user and populate the product details
-    const cart = await Cart.findOne({ user: userId }).populate('items.product');
+    // Find the cart for the user
+    const cart = await Cart.findOne({ user: userId });
 
-    if (!cart) {
-      return res.status(404).json({ success: false, message: 'Cart not found' });
+    if (!cart || cart.items.length === 0) {
+      return res.status(404).json({ success: false, message: 'Cart is empty' });
     }
 
-    // Map cart items to include product details
-    const formattedCart = cart.items.map((item) => ({
-      productId: item.product._id,
-      name: item.product.name,
-      price: item.product.price,
-      quantity: item.quantity,
-      total: item.quantity * item.product.price,
-      image: item.product.images?.[0] || null, // Image of the product
-    }));
+    // Fetch detailed product data for each item in the cart
+    const cartedProducts = await Promise.all(
+      cart.items.map(async (item) => {
+        const product = await Product.findById(item.product);
+        if (product) {
+          return {
+            productId: product._id,
+            name: product.name,
+            price: product.price,
+            quantity: item.quantity,
+            total: item.quantity * product.price,
+            image: product.images?.[0] || null,
+          };
+        }
+        return null; // Exclude items if the product no longer exists
+      })
+    );
 
-    // Calculate the total price and total quantity of items in the cart
-    const totalQuantity = cart.items.reduce((acc, item) => acc + item.quantity, 0);
-    const totalPrice = formattedCart.reduce((acc, item) => acc + item.total, 0);
+    // Filter out any null values (for missing products)
+    const validCartedProducts = cartedProducts.filter((item) => item !== null);
+
+    // Calculate total price and quantity
+    const totalQuantity = validCartedProducts.reduce((acc, item) => acc + item.quantity, 0);
+    const totalPrice = validCartedProducts.reduce((acc, item) => acc + item.total, 0);
 
     res.status(200).json({
       success: true,
-      cart: formattedCart,
+      cartId: cart._id,
+      user: cart.user,
       totalQuantity,
       totalPrice,
+      products: validCartedProducts,
     });
   } catch (error) {
-    console.error('Error fetching cart:', error);
-    res.status(500).json({ success: false, message: 'Error fetching cart' });
+    console.error('Error in getCart:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
+  
 
   
 
