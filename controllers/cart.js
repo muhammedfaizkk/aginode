@@ -121,9 +121,6 @@ exports.clearCart = async (req, res) => {
 
 
 
-const Product = require('../models/ProductModel'); // Correct path to your Product model
-const Cart = require('../models/CartModel'); // Assuming you have a Cart model
-
 exports.getCart = async (req, res) => {
   try {
     const userId = req.user._id; // Assuming the user's ID is available in `req.user`
