@@ -122,36 +122,45 @@ exports.clearCart = async (req, res) => {
     }
 };
 
-// Get cart details
+
+
 exports.getCart = async (req, res) => {
-    try {
-      const userId = req.user._id; // Assuming `req.user` contains authenticated user details
-      const cart = await Cart.findOne({ user: userId }).populate('items.product');
-  
-      if (!cart) {
-        return res.status(404).json({ success: false, message: 'Cart not found' });
-      }
-  
-      // Filter out items with missing products
-      const filteredItems = cart.items.filter((item) => item.product !== null);
-  
-      // Format response to include only necessary fields
-      const formattedCart = {
-        ...cart._doc, // Spread the original cart object
-        items: filteredItems.map((item) => ({
-          productId: item.product._id,
-          name: item.product.name, // Assuming product has a 'name' field
-          price: item.product.price, // Assuming product has a 'price' field
-          quantity: item.quantity,
-        })),
-      };
-  
-      res.status(200).json({ success: true, cart: formattedCart });
-    } catch (error) {
-      console.error('Error in getCart:', error.message);
-      res.status(500).json({ success: false, message: 'Internal server error' });
+  try {
+    const userId = req.user._id; // Assuming `req.user` contains authenticated user details
+    const cart = await Cart.findOne({ user: userId }).populate('items.product');
+
+    if (!cart) {
+      return res.status(404).json({ success: false, message: 'Cart not found' });
     }
-  };
+
+    // Fetch all products in the system
+    const allProducts = await Product.find();
+
+    // Filter out items with missing products in the cart
+    const filteredItems = cart.items.filter((item) => item.product !== null);
+
+    // Format cart response
+    const formattedCart = {
+      ...cart._doc, // Spread the original cart object
+      items: filteredItems.map((item) => ({
+        productId: item.product._id,
+        name: item.product.name, // Assuming product has a 'name' field
+        price: item.product.price, // Assuming product has a 'price' field
+        quantity: item.quantity,
+      })),
+    };
+
+    res.status(200).json({
+      success: true,
+      cart: formattedCart,
+      products: allProducts, // Include all products in the response
+    });
+  } catch (error) {
+    console.error('Error in getCart:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
   
 
 
