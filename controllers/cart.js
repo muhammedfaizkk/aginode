@@ -125,9 +125,8 @@ exports.clearCart = async (req, res) => {
 
 exports.getCart = async (req, res) => {
   try {
-    const userId = req.user._id; // Extract user ID from authenticated request
+    const userId = req.user._id; 
 
-    // Find the cart for the user
     const cart = await Cart.findOne({ user: userId });
 
     if (!cart || cart.items.length === 0) {
@@ -141,18 +140,18 @@ exports.getCart = async (req, res) => {
         if (product) {
           return {
             productId: product._id,
-            name: product.name,
-            price: product.price,
+            name: product.productName,
+            price: product.currentPrice,
             quantity: item.quantity,
-            total: item.quantity * product.price,
-            image: product.images?.[0] || null,
+            total: item.quantity * product.currentPrice,
+            image: product.photographs?.[0] || null,
           };
         }
         return null; // Exclude items if the product no longer exists
       })
     );
 
-    // Filter out any null values (for missing products)
+
     const validCartedProducts = cartedProducts.filter((item) => item !== null);
 
     // Calculate total price and quantity
