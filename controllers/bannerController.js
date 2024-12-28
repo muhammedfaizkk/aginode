@@ -1,4 +1,6 @@
 const Banner = require('../models/bannerModals');
+const fs = require('fs');
+const path = require('path');
 
 exports.createBanner = async (req, res) => {
   try {
@@ -12,7 +14,7 @@ exports.createBanner = async (req, res) => {
     // Create a new banner
     const newBanner = new Banner({
       title,
-      images, // Store array of image paths
+      images, 
     });
 
     await newBanner.save();
@@ -63,24 +65,36 @@ exports.updateBanner = async (req, res) => {
   }
 };
 
+
 exports.deleteBanner = async (req, res) => {
-    try {
-      const bannerId = req.params.bannerId;
-  
-      // Find the banner by ID and remove it
-      const deletedBanner = await Banner.findByIdAndDelete(bannerId);
-  
-      if (!deletedBanner) {
-        return res.status(404).json({ success: false, message: 'Banner not found' });
-      }
-  
-      res.status(200).json({
-        success: true,
-        message: 'Banner deleted successfully',
-        banner: deletedBanner,
-      });
-    } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
+  try {
+    const bannerId = req.params.bannerId;
+    const banner = await Banner.findById(bannerId);
+
+    if (!banner) {
+      return res.status(404).json({ success: false, message: 'Banner not found' });
     }
-  };
-  
+
+    if (Array.isArray(banner.images)) {
+      banner.images.forEach((imagePath) => {
+        const resolvedPath = path.resolve(imagePath); // Resolve the full path
+        fs.unlink(resolvedPath, (err) => {
+          if (err) {
+            console.error(`Error deleting file: ${resolvedPath}`, err);
+          }
+        });
+      });
+    }
+
+    // Delete the banner from the database
+    await banner.deleteOne();
+
+    res.status(200).json({
+      success: true,
+      message: 'Banner and associated images deleted successfully',
+      banner,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
