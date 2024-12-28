@@ -132,7 +132,7 @@ exports.getCart = async (req, res) => {
       if (!cart || cart.items.length === 0) {
         return res.status(404).json({ success: false, message: 'No products in cart' });
       }
-
+  
       const productDetails = await Promise.all(
         cart.items.map(async (item) => {
           const product = await Product.findById(item.productId); // Find the product by its ID
@@ -148,8 +148,12 @@ exports.getCart = async (req, res) => {
         })
       );
   
-      // Filter out null values (in case some product IDs don't exist)
+      // Filter out null products
       const filteredProducts = productDetails.filter((product) => product !== null);
+  
+      if (filteredProducts.length === 0) {
+        return res.status(404).json({ success: false, message: 'No valid products in cart' });
+      }
   
       res.status(200).json({
         success: true,
@@ -162,6 +166,7 @@ exports.getCart = async (req, res) => {
       res.status(500).json({ success: false, message: 'Internal server error' });
     }
   };
+  
   
 
   
