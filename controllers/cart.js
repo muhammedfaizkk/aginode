@@ -8,9 +8,12 @@ exports.addItemToCart = async (req, res) => {
       const { productId, quantity } = req.body;
       const userId = req.user._id;
   
+      // Validate the product ID and quantity
       if (!productId || !quantity || quantity <= 0) {
         return res.status(400).json({ message: "Invalid product ID or quantity" });
       }
+  
+      // Check if the product exists
       const product = await Product.findById(productId);
       if (!product) {
         return res.status(404).json({ message: "Product not found" });
@@ -119,44 +122,44 @@ exports.clearCart = async (req, res) => {
     }
 };
 
-exports.getCart = async (req, res) => {
+
+const getCart = async (req, res) => {
   try {
-    const userId = req.user._id;
-    const cart = await Cart.findOne({ user: userId });
+    const userId = req.user._id; // Get user ID from the authenticated request
+
+    // Find the cart for the user and populate the product details
+    const cart = await Cart.findOne({ user: userId }).populate('items.product');
+
     if (!cart) {
-      return res.status(404).json({ message: "Cart not found" });
+      return res.status(404).json({ success: false, message: 'Cart not found' });
     }
 
-    
-    const productPromises = cart.items.map(async (item) => {
-      console.log(`Fetching product with ID: ${item.product}`);
-      const product = await Product.findById(item.product); 
-      if (!product) {
-        console.error(`Product not found for ID: ${item.product}`); 
-        throw new Error(`Product not found for ID: ${item.product}`);
-      }
-      return {
-        product: product,   // Product details
-        quantity: item.quantity,  // Quantity from the cart
-      };
-    });
+    // Map cart items to include product details
+    const formattedCart = cart.items.map((item) => ({
+      productId: item.product._id,
+      name: item.product.name,
+      price: item.product.price,
+      quantity: item.quantity,
+      total: item.quantity * item.product.price,
+      image: item.product.images?.[0] || null, // Image of the product
+    }));
 
-    // Wait for all product details to be fetched
-    const populatedItems = await Promise.all(productPromises);
+    // Calculate the total price and total quantity of items in the cart
+    const totalQuantity = cart.items.reduce((acc, item) => acc + item.quantity, 0);
+    const totalPrice = formattedCart.reduce((acc, item) => acc + item.total, 0);
 
-    // Respond with the populated cart items
     res.status(200).json({
-      message: "Cart fetched successfully",
-      cart: populatedItems, // Send the populated items with product details and quantity
+      success: true,
+      cart: formattedCart,
+      totalQuantity,
+      totalPrice,
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error fetching cart", error: error.message });
+    console.error('Error fetching cart:', error);
+    res.status(500).json({ success: false, message: 'Error fetching cart' });
   }
 };
 
-
-  
 
   
 
