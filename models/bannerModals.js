@@ -7,7 +7,7 @@ const bannerSchema = new mongoose.Schema({
   },
   images: [
     {
-      type: String, // Store multiple image paths
+      type: String, 
       required: true,
     },
   ],

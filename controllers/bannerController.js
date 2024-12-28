@@ -33,10 +33,22 @@ exports.createBanner = async (req, res) => {
 exports.getBanners = async (req, res) => {
   try {
     const banners = await Banner.find();
+    
     if (banners.length === 0) {
       return res.status(404).json({ success: false, message: 'No banners found' });
     }
-    res.status(200).json({ success: true, banners });
+    const modifiedBanners = banners.map((banner) => {
+      return {
+        ...banner._doc, 
+        images: banner.images.map((imagePath) => 
+          imagePath.includes('/uploads/') 
+            ? `uploads/${imagePath.split('/uploads/')[1]}` 
+            : imagePath
+        ),
+      };
+    });
+
+    res.status(200).json({ success: true, banners: modifiedBanners });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
