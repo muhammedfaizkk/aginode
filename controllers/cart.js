@@ -160,7 +160,7 @@ exports.getCart = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      cartId: cart._id,
+      items: cart,
       user: cart.user,
       totalQuantity,
       totalPrice,
