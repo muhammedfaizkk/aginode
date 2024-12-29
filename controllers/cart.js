@@ -140,14 +140,15 @@ exports.getCart = async (req, res) => {
         if (product) {
           return {
             productId: product._id,
+            cartId:item._id,
+            quantity: item.quantity,
             name: product.productName,
             price: product.currentPrice,
-            quantity: item.quantity,
             total: item.quantity * product.currentPrice,
             image: product.photographs?.[0] || null,
           };
         }
-        return null; // Exclude items if the product no longer exists
+        return null; 
       })
     );
 
@@ -160,10 +161,6 @@ exports.getCart = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      items: cart,
-      user: cart.user,
-      totalQuantity,
-      totalPrice,
       products: validCartedProducts,
     });
   } catch (error) {
