@@ -133,7 +133,7 @@ exports.getCart = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Cart is empty' });
     }
 
-    // Fetch detailed product data for each item in the cart
+  
     const cartedProducts = await Promise.all(
       cart.items.map(async (item) => {
         const product = await Product.findById(item.product);
@@ -154,8 +154,6 @@ exports.getCart = async (req, res) => {
 
 
     const validCartedProducts = cartedProducts.filter((item) => item !== null);
-
-    // Calculate total price and quantity
     const totalQuantity = validCartedProducts.reduce((acc, item) => acc + item.quantity, 0);
     const totalPrice = validCartedProducts.reduce((acc, item) => acc + item.total, 0);
 

@@ -4,7 +4,6 @@ const upload = require("../middleware/fileUpload");
 
 const router = express.Router();
 
-// Define routes
 router.post('/api/addproducts', upload.array('photographs', 4), addProduct);
 router.route('/api/productsdelete/:id').delete(deleteProduct);
 router.route('/api/getAllproducts').get(getAllProducts);
