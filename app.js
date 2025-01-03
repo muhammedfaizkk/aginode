@@ -9,6 +9,7 @@ const cartRoute = require('./routes/cartRoute')
 const shippingaddress = require('./routes/shippingaddress')
 const favoriteRoutes = require('./routes/favoriteRoutes')
 const banners = require('./routes/banners')
+const categoryRoute = require('./routes/categoryRoute')
 const path = require('path');
 
 require('dotenv').config();
@@ -24,6 +25,7 @@ app.use(cartRoute)
 app.use(shippingaddress)
 app.use(favoriteRoutes)
 app.use(banners)
+app.use(categoryRoute)
 
 
 
