@@ -29,6 +29,11 @@ const productSchema = new mongoose.Schema({
         type: String,
         required: [true, "Please enter a category"],
         maxLength: [30, "Category shouldn't exceed 30 characters"]
+    },
+    subcategory: {
+        type: String,
+        required: [true, "Please enter a subcategory"],
+        maxLength: [30, "Category shouldn't exceed 30 characters"]
     }
 }, { timestamps: true });
 

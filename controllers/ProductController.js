@@ -2,9 +2,8 @@ const Product = require('../models/ProudctModel');
 const fs = require('fs');
 const path = require('path');
 
-// Add Product
 exports.addProduct = async (req, res) => {
-    const { productName, originalPrice, currentPrice, specifications, category } = req.body;
+    const { productName, originalPrice, currentPrice, specifications, category,subcategory } = req.body;
 
     try {
         const photographs = req.files.map(file => `/uploads/${file.filename}`);
@@ -16,6 +15,7 @@ exports.addProduct = async (req, res) => {
             specifications,
             photographs,
             category,
+            subcategory
         });
 
         res.status(201).json({
