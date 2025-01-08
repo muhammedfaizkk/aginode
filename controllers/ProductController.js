@@ -84,7 +84,7 @@ exports.getProductById = async (req, res) => {
 
 // Update Product
 exports.updateProduct = async (req, res) => {
-    const { productName, originalPrice, currentPrice, specifications, category } = req.body;
+    const { productName, originalPrice, currentPrice, specifications, category,subcategory } = req.body;
 
     try {
         const product = await Product.findById(req.params.id);
@@ -116,6 +116,7 @@ exports.updateProduct = async (req, res) => {
         product.currentPrice = currentPrice || product.currentPrice;
         product.specifications = specifications || product.specifications;
         product.category = category || product.category;
+        product.subcategory = subcategory || product.subcategory;
 
         await product.save();
 
