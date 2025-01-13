@@ -33,18 +33,23 @@ exports.addProduct = async (req, res) => {
 
 exports.getAllProducts = async (req, res) => {
     try {
-        const page = parseInt(req.query.page) || 1; 
-        const limit = parseInt(req.query.limit) || 10;
-        const skip = (page - 1) * limit;  
-        const products = await Product.find().skip(skip).limit(limit);
-        const totalProducts = await Product.countDocuments();
+        const { page = 1, limit = 10, category } = req.query;
+        const pageNumber = parseInt(page);
+        const limitNumber = parseInt(limit);
+        const skip = (pageNumber - 1) * limitNumber;
+
+        const filter = category ? { category: category } : {};
+
+        const products = await Product.find(filter).skip(skip).limit(limitNumber);
+        const totalProducts = await Product.countDocuments(filter); // Count filtered products
         const pagination = {
             totalProducts,
-            currentPage: page,
-            totalPages: Math.ceil(totalProducts / limit),
-            hasNextPage: page * limit < totalProducts,
-            hasPreviousPage: page > 1,
+            currentPage: pageNumber,
+            totalPages: Math.ceil(totalProducts / limitNumber),
+            hasNextPage: pageNumber * limitNumber < totalProducts,
+            hasPreviousPage: pageNumber > 1,
         };
+
         res.status(200).json({
             success: true,
             pagination,
@@ -57,6 +62,7 @@ exports.getAllProducts = async (req, res) => {
         });
     }
 };
+
 
 
 exports.getProductById = async (req, res) => {

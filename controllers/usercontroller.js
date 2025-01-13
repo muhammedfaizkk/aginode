@@ -86,7 +86,7 @@ exports.signin = async (req, res, next) => {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production", // Use HTTPS in production
             sameSite: "strict", // Prevent CSRF
-            maxAge: 24 * 60 * 60 * 1000, // Token validity in milliseconds (1 day)
+           maxAge: 30 * 24 * 60 * 60 * 1000, 
         });
 
         // Send response with user info and token
