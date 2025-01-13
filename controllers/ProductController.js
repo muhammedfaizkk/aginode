@@ -33,15 +33,15 @@ exports.addProduct = async (req, res) => {
 
 exports.getAllProducts = async (req, res) => {
     try {
-        const { page = 1, limit = 10, category } = req.query;
+        const { page = 1, limit = 10, subcategory } = req.query;
         const pageNumber = parseInt(page);
         const limitNumber = parseInt(limit);
         const skip = (pageNumber - 1) * limitNumber;
 
-        const filter = category ? { category: category } : {};
+        const filter = subcategory ? { subcategory: subcategory } : {};
 
         const products = await Product.find(filter).skip(skip).limit(limitNumber);
-        const totalProducts = await Product.countDocuments(filter); // Count filtered products
+        const totalProducts = await Product.countDocuments(filter); 
         const pagination = {
             totalProducts,
             currentPage: pageNumber,
