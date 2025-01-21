@@ -2,16 +2,21 @@ const mongoose = require("mongoose");
 
 const orderSchema = new mongoose.Schema(
     {
+        orderId: {
+            type: String,
+            required: true,
+            unique: true,
+        },
         user: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "User", // Reference to the User model
+            ref: "User",
             required: true,
         },
         products: [
             {
                 productId: {
                     type: mongoose.Schema.Types.ObjectId,
-                    ref: "Product", // Reference to the Product model
+                    ref: "Product",
                     required: true,
                 },
                 quantity: {
@@ -27,13 +32,13 @@ const orderSchema = new mongoose.Schema(
         },
         addressId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "Address", // Reference to the Address model
+            ref: "Address",
             required: true,
         },
         contactNumber: {
             type: String,
             required: true,
-            match: [/^\d{10}$/, "Contact number must be 10 digits"], // Ensures valid 10-digit phone numbers
+            match: [/^\d{10}$/, "Contact number must be 10 digits"],
         },
         status: {
             type: String,
@@ -41,9 +46,7 @@ const orderSchema = new mongoose.Schema(
             default: "Pending",
         },
     },
-    {
-        timestamps: true,
-    }
+    { timestamps: true }
 );
 
 module.exports = mongoose.model("Order", orderSchema);

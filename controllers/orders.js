@@ -1,12 +1,14 @@
 const Order = require('../models/ordersmodel');
 const ShippingAddress = require('../models/shippingAddmodel');
+const Product = require('../models/ProudctModel'); // Assuming this is the correct product model
+const { v4: uuidv4 } = require('uuid');
 
-
+// Create Order
 exports.createOrder = async (req, res) => {
     try {
         const { user, products, totalAmount, addressId, contactNumber } = req.body;
 
-        if (!user || !products || !totalAmount || !addressId || !contactNumber) {
+        if (!user || !products.length || !totalAmount || !addressId || !contactNumber) {
             return res.status(400).json({ message: "All fields are required" });
         }
 
@@ -15,7 +17,19 @@ exports.createOrder = async (req, res) => {
             return res.status(404).json({ message: "Address not found" });
         }
 
+        for (const product of products) {
+            const productExists = await Product.findById(product.productId);
+            if (!productExists) {
+                return res.status(404).json({ message: `Product with ID ${product.productId} not found` });
+            }
+            if (product.quantity > productExists.stock) {
+                return res.status(400).json({ message: `Insufficient stock for ${productExists.productName}` });
+            }
+        }
+
+        const orderId = uuidv4();
         const order = new Order({
+            orderId,
             user,
             products,
             totalAmount,
@@ -24,6 +38,12 @@ exports.createOrder = async (req, res) => {
         });
 
         await order.save();
+
+        for (const product of products) {
+            await Product.findByIdAndUpdate(product.productId, {
+                $inc: { stock: -product.quantity }
+            });
+        }
 
         res.status(201).json({
             success: true,
@@ -35,8 +55,7 @@ exports.createOrder = async (req, res) => {
     }
 };
 
-
-
+// Update Order Status
 exports.updateOrderStatus = async (req, res) => {
     try {
         const { orderId } = req.params;
@@ -50,11 +69,10 @@ exports.updateOrderStatus = async (req, res) => {
             return res.status(400).json({ message: "Invalid status" });
         }
 
-        // Update the status of the order
-        const order = await Order.findByIdAndUpdate(
-            orderId,
+        const order = await Order.findOneAndUpdate(
+            { orderId },
             { status },
-            { new: true } // Return the updated document
+            { new: true }
         );
 
         if (!order) {
@@ -71,13 +89,12 @@ exports.updateOrderStatus = async (req, res) => {
     }
 };
 
-
-
+// Delete Order
 exports.deleteOrder = async (req, res) => {
     try {
         const { orderId } = req.params;
 
-        const order = await Order.findByIdAndDelete(orderId);
+        const order = await Order.findOneAndDelete({ orderId });
         if (!order) {
             return res.status(404).json({ message: "Order not found" });
         }
@@ -91,10 +108,12 @@ exports.deleteOrder = async (req, res) => {
     }
 };
 
-// Get all orders
+// Get All Orders
 exports.getAllOrders = async (req, res) => {
     try {
-        const orders = await Order.find().populate('user', 'name email').populate('products.productId', 'productName price');
+        const orders = await Order.find()
+            .populate('user', 'name email')
+            .populate('products.productId', 'productName price');
         res.status(200).json({
             success: true,
             orders,
@@ -104,12 +123,12 @@ exports.getAllOrders = async (req, res) => {
     }
 };
 
-
+// Get Order By ID
 exports.getOrderById = async (req, res) => {
     try {
         const { orderId } = req.params;
 
-        const order = await Order.findById(orderId)
+        const order = await Order.findOne({ orderId })
             .populate('user', 'name email')
             .populate('products.productId', 'productName price');
 
