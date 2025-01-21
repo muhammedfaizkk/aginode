@@ -35,11 +35,6 @@ const orderSchema = new mongoose.Schema(
             ref: "Address",
             required: true,
         },
-        contactNumber: {
-            type: String,
-            required: true,
-            match: [/^\d{10}$/, "Contact number must be 10 digits"],
-        },
         status: {
             type: String,
             enum: ["Pending", "Shipped", "Delivered", "Cancelled"],

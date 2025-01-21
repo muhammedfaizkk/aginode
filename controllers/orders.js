@@ -3,12 +3,12 @@ const ShippingAddress = require('../models/shippingAddmodel');
 const Product = require('../models/ProudctModel'); // Assuming this is the correct product model
 const { v4: uuidv4 } = require('uuid');
 
-// Create Order
+
 exports.createOrder = async (req, res) => {
     try {
-        const { user, products, totalAmount, addressId, contactNumber } = req.body;
+        const { user, products, totalAmount, addressId } = req.body;
 
-        if (!user || !products.length || !totalAmount || !addressId || !contactNumber) {
+        if (!user || !products.length || !totalAmount || !addressId) {
             return res.status(400).json({ message: "All fields are required" });
         }
 
@@ -34,7 +34,6 @@ exports.createOrder = async (req, res) => {
             products,
             totalAmount,
             addressId,
-            contactNumber,
         });
 
         await order.save();
