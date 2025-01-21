@@ -30,10 +30,32 @@ const orderSchema = new mongoose.Schema(
             type: Number,
             required: true,
         },
-        addressId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Address",
-            required: true,
+        address: {
+            street: {
+                type: String,
+                required: true,
+            },
+            city: {
+                type: String,
+                required: true,
+            },
+            state: {
+                type: String,
+                required: true,
+            },
+            postalCode: {
+                type: String,
+                required: true,
+            },
+            phone: {
+                type: String,
+                required: true, // Make phone number required
+            },
+            email: {
+                type: String,
+                required: true, // Make email address required
+                match: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, // Regex to validate email format
+            },
         },
         status: {
             type: String,
