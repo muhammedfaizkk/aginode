@@ -40,12 +40,14 @@ const orderSchema = new mongoose.Schema(
             default: "Pending",
         },
         address: {
+            name:String,
+            phone: String,
+            email: String,
             street: String,
             city: String,
             state: String,
             postalCode: String,
-            phone: String,
-            email: String,
+           
         },
         status: {
             type: String,
