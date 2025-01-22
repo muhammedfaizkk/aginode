@@ -38,49 +38,52 @@ async function sendOrderConfirmationEmail(order, userEmail) {
 
 exports.createOrder = async (req, res) => {
     try {
-        
+        // Initialize Razorpay instance with keys
         const razorpayInstance = new razorpay({
-            key_id: process.env.RAZORPAY_KEY_ID,  
-            key_secret: process.env.RAZORPAY_KEY_SECRET, 
+            key_id: process.env.RAZORPAY_KEY_ID,
+            key_secret: process.env.RAZORPAY_KEY_SECRET,
         });
+
+        // Extract data from the request body
         const { user, products, totalAmount, address } = req.body;
 
+        // Validate product data
         if (!products.length || !totalAmount || !address) {
             return res.status(400).json({ message: "All fields are required" });
         }
 
+        // Validate address fields
         const { street, city, state, postalCode, phone, email } = address;
         if (!street || !city || !state || !postalCode || !phone || !email) {
             return res.status(400).json({ message: "Complete address details are required" });
         }
 
+        // Validate email format
         const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         if (!emailRegex.test(email)) {
             return res.status(400).json({ message: "Invalid email format" });
         }
 
+        // Validate phone number format
         const phoneRegex = /^[0-9]{10}$/;
         if (!phoneRegex.test(phone)) {
             return res.status(400).json({ message: "Invalid phone number format" });
         }
 
-        // Razorpay order creation
+        // Create Razorpay order
         const razorpayOrder = await razorpayInstance.orders.create({
-            amount: totalAmount * 100,  // Amount in paise
+            amount: totalAmount * 100,  // Amount in paise (Razorpay expects amount in paise)
             currency: 'INR',
-            receipt: uuidv4(),
+            receipt: uuidv4(),  // Unique receipt ID
         });
 
-        // Fetch user email from the User model using the user ID
-        const userRecord = await User.findById(user);  // user ID should be passed in the request body
-        if (!userRecord) {
-            return res.status(400).json({ message: "User not found" });
-        }
+        // Fetch user data from the database using the provided user ID
+       
 
-        const userEmail = userRecord.email;  // Get the email of the user
+        const userEmail = address.email;  // Get the email of the user
 
-        // Create Razorpay Payment Link
-        const paymentLink = await razorpayInstance.paymentLinks.create({
+        // Create Razorpay payment link
+        const paymentLink = await razorpayInstance.paymentLink.create({
             amount: totalAmount * 100,  // Amount in paise
             currency: 'INR',
             description: 'Order Payment',
@@ -97,29 +100,31 @@ exports.createOrder = async (req, res) => {
             },
         });
 
-        // Create the order
+        // Create the order object and save it in the database
         const order = new Order({
             orderId: razorpayOrder.id,
             user,
             products,
             totalAmount,
             address,
-            paymentStatus: 'Pending',  // Pending until payment is confirmed
+            paymentStatus: 'Pending',  // Payment is pending until it's confirmed
         });
 
         await order.save();
 
-        // Send confirmation email with payment link
+        // Send the confirmation email with the payment link
         await sendOrderConfirmationEmail(order, userEmail, paymentLink.short_url);
 
+        // Respond with success message
         res.status(201).json({
             success: true,
             message: 'Order created successfully',
             order,
             razorpayOrderId: razorpayOrder.id,
-            paymentLink: paymentLink.short_url,  // Send the payment link as part of the response
+            paymentLink: paymentLink.short_url,  // Include the payment link in the response
         });
     } catch (error) {
+        console.error(error);
         res.status(500).json({ message: error.message });
     }
 };
