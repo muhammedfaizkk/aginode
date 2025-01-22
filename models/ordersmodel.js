@@ -49,17 +49,22 @@ const orderSchema = new mongoose.Schema(
             },
             phone: {
                 type: String,
-                required: true, // Make phone number required
+                required: true,
             },
             email: {
                 type: String,
-                required: true, // Make email address required
-                match: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, // Regex to validate email format
+                required: true,
+                match: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
             },
         },
         status: {
             type: String,
             enum: ["Pending", "Shipped", "Delivered", "Cancelled"],
+            default: "Pending",
+        },
+        paymentStatus: {
+            type: String,
+            enum: ["Pending", "Paid", "Failed"],
             default: "Pending",
         },
     },
