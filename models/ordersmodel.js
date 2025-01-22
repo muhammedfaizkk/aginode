@@ -10,7 +10,7 @@ const orderSchema = new mongoose.Schema(
         user: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
-            required: false,
+            required: true,
         },
         products: [
             {
@@ -30,45 +30,30 @@ const orderSchema = new mongoose.Schema(
             type: Number,
             required: true,
         },
-        address: {
-            street: {
-                type: String,
-                required: true,
-            },
-            city: {
-                type: String,
-                required: true,
-            },
-            state: {
-                type: String,
-                required: true,
-            },
-            postalCode: {
-                type: String,
-                required: true,
-            },
-            phone: {
-                type: String,
-                required: true,
-            },
-            email: {
-                type: String,
-                required: true,
-                match: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-            },
-        },
-        status: {
-            type: String,
-            enum: ["Pending", "Shipped", "Delivered", "Cancelled"],
-            default: "Pending",
+        paymentId: {
+            type: String,  // Store Razorpay payment ID
+            required: false,
         },
         paymentStatus: {
             type: String,
             enum: ["Pending", "Paid", "Failed"],
             default: "Pending",
         },
+        address: {
+            street: String,
+            city: String,
+            state: String,
+            postalCode: String,
+            phone: String,
+            email: String,
+        },
+        status: {
+            type: String,
+            enum: ["Pending", "Shipped", "Delivered", "Cancelled"],
+            default: "Pending",
+        },
     },
-    { timestamps: true }
+    { timestamps: true }  // Automatically manages createdAt and updatedAt
 );
 
 module.exports = mongoose.model("Order", orderSchema);

@@ -1,14 +1,50 @@
 const Order = require('../models/ordersmodel');
-// const ShippingAddress = require('../models/shippingAddmodel');
+require('dotenv').config(); 
 const Product = require('../models/ProudctModel');
 const { v4: uuidv4 } = require('uuid');
+const nodemailer = require('nodemailer');
+const razorpay = require('razorpay');  // Razorpay SDK
 
+
+async function sendOrderConfirmationEmail(order, userEmail) {
+    const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: process.env.EMAIL_USER,  // Your email address
+            pass: process.env.EMAIL_PASS,  // Your email password or app-specific password
+        }
+    });
+
+    const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: userEmail,  // Send email to the user's email address
+        subject: 'Order Confirmation - Order #' + order.orderId,
+        html: `
+            <h1>Order Confirmation</h1>
+            <p>Thank you for your order!</p>
+            <p><strong>Order ID:</strong> ${order.orderId}</p>
+            <p><strong>Total Amount:</strong> ₹${order.totalAmount}</p>
+            <p><strong>Order Placed At:</strong> ${new Date(order.createdAt).toLocaleString()}</p>
+            <h3>Shipping Address</h3>
+            <p>${order.address.street}, ${order.address.city}, ${order.address.state}, ${order.address.postalCode}</p>
+            <p><strong>Contact:</strong> ${order.address.phone}</p>
+        `,
+    };
+
+    await transporter.sendMail(mailOptions);
+}
 
 
 
 exports.createOrder = async (req, res) => {
     try {
+        
+        const razorpayInstance = new razorpay({
+            key_id: process.env.RAZORPAY_KEY_ID,  
+            key_secret: process.env.RAZORPAY_KEY_SECRET, 
+        });
         const { user, products, totalAmount, address } = req.body;
+
         if (!products.length || !totalAmount || !address) {
             return res.status(400).json({ message: "All fields are required" });
         }
@@ -27,20 +63,93 @@ exports.createOrder = async (req, res) => {
         if (!phoneRegex.test(phone)) {
             return res.status(400).json({ message: "Invalid phone number format" });
         }
-        const orderId = uuidv4();
+
+        // Razorpay order creation
+        const razorpayOrder = await razorpayInstance.orders.create({
+            amount: totalAmount * 100,  // Amount in paise
+            currency: 'INR',
+            receipt: uuidv4(),
+        });
+
+        // Fetch user email from the User model using the user ID
+        const userRecord = await User.findById(user);  // user ID should be passed in the request body
+        if (!userRecord) {
+            return res.status(400).json({ message: "User not found" });
+        }
+
+        const userEmail = userRecord.email;  // Get the email of the user
+
+        // Create Razorpay Payment Link
+        const paymentLink = await razorpayInstance.paymentLinks.create({
+            amount: totalAmount * 100,  // Amount in paise
+            currency: 'INR',
+            description: 'Order Payment',
+            customer: {
+                name: userRecord.name,  // User's name
+                email: userEmail,  // User's email
+            },
+            notify: {
+                sms: true,
+                email: true,
+            },
+            expiration: {
+                duration: 3600,  // Link will expire in 1 hour (3600 seconds)
+            },
+        });
+
+        // Create the order
         const order = new Order({
-            orderId,
+            orderId: razorpayOrder.id,
             user,
             products,
             totalAmount,
             address,
+            paymentStatus: 'Pending',  // Pending until payment is confirmed
         });
 
         await order.save();
 
+        // Send confirmation email with payment link
+        await sendOrderConfirmationEmail(order, userEmail, paymentLink.short_url);
+
         res.status(201).json({
             success: true,
-            message: "Order created successfully",
+            message: 'Order created successfully',
+            order,
+            razorpayOrderId: razorpayOrder.id,
+            paymentLink: paymentLink.short_url,  // Send the payment link as part of the response
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+exports.updatePaymentStatus = async (req, res) => {
+    try {
+        const { paymentId, orderId } = req.body;
+
+        if (!paymentId || !orderId) {
+            return res.status(400).json({ message: "Payment ID and Order ID are required" });
+        }
+
+        const order = await Order.findOne({ orderId });
+        if (!order) {
+            return res.status(404).json({ message: "Order not found" });
+        }
+
+        // Update the payment status
+        order.paymentStatus = 'Completed';
+        order.paymentId = paymentId;  // Save payment ID from Razorpay
+        await order.save();
+
+        // Send payment confirmation email
+        const userRecord = await User.findById(order.user);
+        const userEmail = userRecord.email;
+        await sendPaymentConfirmationEmail(order, userEmail);  // Send email after payment is confirmed
+
+        res.status(200).json({
+            success: true,
+            message: 'Payment status updated successfully',
             order,
         });
     } catch (error) {
