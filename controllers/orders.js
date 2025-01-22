@@ -75,9 +75,9 @@ exports.createOrder = async (req, res) => {
             receipt: uuidv4(),
         });
 
-        // Create payment link for Razorpay
+        
         const paymentLink = await razorpayInstance.paymentLink.create({
-            amount: totalAmount * 100,  // Amount in paise
+            amount: totalAmount * 100, 
             currency: 'INR',
             description: 'Order Payment',
             customer: {
@@ -85,12 +85,13 @@ exports.createOrder = async (req, res) => {
                 email: address.email,
             },
             notify: {
-                email: true,
+                email: true, 
             },
             expiration: {
                 duration: 3600,  
             },
         });
+        
 
         
         const order = new Order({
