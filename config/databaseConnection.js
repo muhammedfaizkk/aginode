@@ -13,7 +13,6 @@ mongoose.connection.on('disconnected', () => {
   console.log('Mongoose disconnected from the database');
 });
 
-// Database connection function using async/await
 const databaseConnection = async () => {
   const uri = process.env.DB_URI;
 

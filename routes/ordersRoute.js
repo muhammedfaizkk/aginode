@@ -9,11 +9,11 @@ const {
 } = require('../controllers/orders');
 const protectRoute = require('../middleware/userAuth');
 
-router.route('/api/createorder').post(protectRoute,createOrder)
-router.route('/api/deleteorde/:orderId').delete(protectRoute,deleteOrder)
-router.route('/api/getAllorders').get(protectRoute,getAllOrders)
-router.route('/api/getAllorders/:orderId').get(protectRoute,getOrderById)
-router.route('/api/updateorder/:orderId').put(protectRoute,updateOrderStatus)
+router.route('/api/createorder').post(createOrder)
+router.route('/api/deleteorde/:orderId').delete(deleteOrder)
+router.route('/api/getAllorders').get(getAllOrders)
+router.route('/api/getAllorders/:orderId').get(getOrderById)
+router.route('/api/updateorder/:orderId').put(updateOrderStatus)
 
 
 module.exports = router;
