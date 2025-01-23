@@ -37,7 +37,6 @@ async function sendOrderConfirmationEmail(order, userEmail, paymentLink) {
 }
 
 
-const { v4: uuidv4 } = require('uuid'); // Ensure uuid is required for receipt generation
 
 exports.createOrder = async (req, res) => {
     try {
