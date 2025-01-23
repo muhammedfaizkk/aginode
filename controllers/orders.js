@@ -73,14 +73,11 @@ exports.createOrder = async (req, res) => {
             receipt: uuidv4(),
             description: 'Order Payment',
             customer: {
-                name,
-                email,
+                name: name,
+                email: email,
             },
-            notify: {
-                email: true,
-            },
-            expire_by: Math.floor(Date.now() / 1000) + 3600, // Expires in 1 hour
         });
+        
 
         // Save the order in the database
         const order = new Order({
