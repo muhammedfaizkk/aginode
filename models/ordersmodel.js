@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 const orderSchema = new mongoose.Schema(
     {
@@ -9,20 +9,20 @@ const orderSchema = new mongoose.Schema(
         },
         user: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
+            ref: "User", // Reference to the User model (optional, can be null if not provided)
             required: false,
         },
         products: [
             {
                 productId: {
-                    type: String,
-                    ref: "Product",
+                    type: String,  // Reference to Product model (or can be a simple String if product details are kept separately)
+                    ref: "Product",  // Optional if you have a Product collection to reference
                     required: true,
                 },
                 quantity: {
                     type: Number,
                     required: true,
-                    min: 1,
+                    min: 1, // Ensure quantity is a positive integer
                 },
             },
         ],
@@ -31,7 +31,7 @@ const orderSchema = new mongoose.Schema(
             required: true,
         },
         paymentId: {
-            type: String,  // Store Razorpay payment ID
+            type: String,  // Store Razorpay payment ID (optional)
             required: false,
         },
         paymentStatus: {
@@ -40,14 +40,13 @@ const orderSchema = new mongoose.Schema(
             default: "Pending",
         },
         address: {
-            name:String,
-            phone: String,
-            email: String,
-            street: String,
-            city: String,
-            state: String,
-            postalCode: String,
-           
+            name: { type: String, required: true },
+            phone: { type: String, required: true },
+            email: { type: String, required: true },
+            street: { type: String, required: true },
+            city: { type: String, required: true },
+            state: { type: String, required: true },
+            postalCode: { type: String, required: true },
         },
         status: {
             type: String,
@@ -55,7 +54,7 @@ const orderSchema = new mongoose.Schema(
             default: "Pending",
         },
     },
-    { timestamps: true }  // Automatically manages createdAt and updatedAt
+    { timestamps: true }  // Automatically manages createdAt and updatedAt fields
 );
 
 module.exports = mongoose.model("Order", orderSchema);

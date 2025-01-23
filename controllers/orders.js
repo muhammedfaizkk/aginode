@@ -36,11 +36,9 @@ async function sendOrderConfirmationEmail(order, userEmail, paymentLink) {
     await transporter.sendMail(mailOptions);
 }
 
-
-
 exports.createOrder = async (req, res) => {
     try {
-        console.log('Request Body:', req.body); // Log incoming request body
+        console.log('Request Body:', req.body); 
 
         const razorpayInstance = new Razorpay({
             key_id: process.env.RAZORPAY_KEY_ID,
@@ -54,7 +52,16 @@ exports.createOrder = async (req, res) => {
             return res.status(400).json({ message: 'Products are required' });
         }
 
-        
+        // Validate product details (productId and quantity)
+        products.forEach((product, index) => {
+            if (!product.productId || !product.quantity) {
+                return res.status(400).json({ 
+                    message: `Missing productId or quantity in product at index ${index}` 
+                });
+            }
+        });
+
+        // Validate totalAmount and address
         if (!totalAmount || !address) {
             return res.status(400).json({ message: 'Total amount and address are required' });
         }
@@ -99,18 +106,23 @@ exports.createOrder = async (req, res) => {
             });
         }
 
+        // Map products to match the Order schema
+        const mappedProducts = products.map(product => ({
+            productId: product.productId,  // Ensure productId is in correct format
+            quantity: product.quantity,
+        }));
+
         // Create new order in database
         const newOrder = new Order({
             orderId: order.id,
             user,
-            products: products.map(product => ({
-                productId: product.productId,  // Ensure productId is in correct format
-                quantity: product.quantity,
-            })),
+            products: mappedProducts,
             totalAmount,
             address,
             paymentStatus: 'Pending',
         });
+
+        console.log('New Order:', newOrder);
 
         await newOrder.save();
 
