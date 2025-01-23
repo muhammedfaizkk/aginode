@@ -54,13 +54,7 @@ exports.createOrder = async (req, res) => {
             return res.status(400).json({ message: 'Products are required' });
         }
 
-        // Validate each product
-        for (const product of products) {
-            if (!product.productId || !product.quantity) {
-                return res.status(400).json({ message: 'Each product must have a productId and quantity' });
-            }
-        }
-
+        
         if (!totalAmount || !address) {
             return res.status(400).json({ message: 'Total amount and address are required' });
         }
