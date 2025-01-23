@@ -4,6 +4,7 @@ const User = require('../models/usersmodel');  // Assuming the user model is nam
 const { v4: uuidv4 } = require('uuid');
 const nodemailer = require('nodemailer');
 const Razorpay = require('razorpay');
+const mongoose = require("mongoose");
 require('dotenv').config();
 
 async function sendOrderConfirmationEmail(order, userEmail, paymentLink) {
