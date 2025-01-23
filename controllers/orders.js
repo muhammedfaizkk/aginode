@@ -92,15 +92,12 @@ exports.createOrder = async (req, res) => {
             });
         }
 
-        const formattedProducts = products.map(productId => ({
-            productId: new mongoose.Types.ObjectId(productId),  // Use new to create a new ObjectId instance
-            quantity: 1,  // Default quantity
-        }));
+      
 
         const newOrder = new Order({
             orderId: order.id,
             user,
-            products: formattedProducts,
+            products,
             totalAmount,
             address,
             paymentStatus: 'Pending',
