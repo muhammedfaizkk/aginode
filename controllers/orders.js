@@ -45,6 +45,8 @@ exports.createOrder = async (req, res) => {
         });
 
         const { user, products, totalAmount, address } = req.body;
+
+        // Validate required fields
         if (!products.length || !totalAmount || !address) {
             return res.status(400).json({ message: 'All fields are required' });
         }
@@ -54,39 +56,34 @@ exports.createOrder = async (req, res) => {
             return res.status(400).json({ message: 'Complete address details are required' });
         }
 
+        // Validate email
         const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         if (!emailRegex.test(email)) {
             return res.status(400).json({ message: 'Invalid email format' });
         }
 
+        // Validate phone
         const phoneRegex = /^[0-9]{10}$/;
         if (!phoneRegex.test(phone)) {
             return res.status(400).json({ message: 'Invalid phone number format' });
         }
 
-        
+        // Create Razorpay Payment Link
         const paymentLink = await razorpayInstance.paymentLink.create({
-            amount: totalAmount * 100,
+            amount: totalAmount * 100, // Convert to subunits
             currency: 'INR',
-            receipt: uuidv4(),
-            description: 'Order Payment',
-            customer_name: name,
-            customer_email: email,
-            customer_contact: phone,
-        });
-        console.log('Payload to Razorpay:', {
-            amount: totalAmount * 100,
-            currency: 'INR',
-            receipt: uuidv4(),
+            receipt: `receipt_${Date.now()}`,
             description: 'Order Payment',
             customer: {
-                name: name,
-                email: email,
-                contact: phone,
+                name: address.name,
+                email: address.email,
+                contact: address.phone,
             },
         });
-                
-        
+
+        console.log('Payload to Razorpay:', paymentLink);
+
+        // Save Order in Database
         const order = new Order({
             orderId: paymentLink.id,
             user,
@@ -98,6 +95,7 @@ exports.createOrder = async (req, res) => {
 
         await order.save();
 
+        // Send Confirmation Email (Optional)
         await sendOrderConfirmationEmail(order, email, paymentLink.short_url);
 
         res.status(201).json({
@@ -107,10 +105,11 @@ exports.createOrder = async (req, res) => {
             paymentLink: paymentLink.short_url,
         });
     } catch (error) {
-        console.error(error);
+        console.error('Error creating order:', error.message);
         res.status(500).json({ message: 'An error occurred while creating the order', error: error.message });
     }
 };
+
 
 
 exports.updatePaymentStatus = async (req, res) => {
