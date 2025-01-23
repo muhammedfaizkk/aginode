@@ -69,7 +69,6 @@ exports.createOrder = async (req, res) => {
             amount: totalAmount * 100,
             currency: 'INR',
             receipt: uuidv4(),
-            description: 'Order Payment',
             customer_name: address.name,
             customer_email: address.email,
         });
