@@ -3,7 +3,7 @@ const Product = require('../models/ProudctModel');
 const User = require('../models/usersmodel');  // Assuming the user model is named 'UserModel'
 const { v4: uuidv4 } = require('uuid');
 const nodemailer = require('nodemailer');
-const razorpay = require('razorpay');
+const Razorpay = require('razorpay');
 require('dotenv').config();
 
 async function sendOrderConfirmationEmail(order, userEmail, paymentLink) {
