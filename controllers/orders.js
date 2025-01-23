@@ -37,10 +37,15 @@ async function sendOrderConfirmationEmail(order, userEmail, paymentLink) {
 
 
 
+const Razorpay = require('razorpay');
+const { v4: uuidv4 } = require('uuid');
+const Order = require('../models/Order');  // Assuming you have an Order model
+
 exports.createOrder = async (req, res) => {
     try {
         console.log('Request Body:', req.body); // Log incoming request body
 
+        // Initialize Razorpay instance with your key_id and key_secret
         const razorpayInstance = new Razorpay({
             key_id: process.env.RAZORPAY_KEY_ID,
             key_secret: process.env.RAZORPAY_KEY_SECRET,
@@ -48,6 +53,7 @@ exports.createOrder = async (req, res) => {
 
         const { user, products, totalAmount, address } = req.body;
 
+        // Validate the request data
         if (!products.length || !totalAmount || !address) {
             return res.status(400).json({ message: 'All fields are required' });
         }
@@ -57,6 +63,7 @@ exports.createOrder = async (req, res) => {
             return res.status(400).json({ message: 'Complete address details are required' });
         }
 
+        // Validate email and phone
         const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         if (!emailRegex.test(email)) {
             return res.status(400).json({ message: 'Invalid email format' });
@@ -69,51 +76,56 @@ exports.createOrder = async (req, res) => {
 
         console.log('Validated data:', { user, products, totalAmount, address });
 
-        let paymentLink;
+        // Create the order using Razorpay
+        let order;
         try {
-            paymentLink = await razorpayInstance.paymentLink.create({
-                amount: totalAmount * 100, // Convert amount to paise
+            order = await razorpayInstance.orders.create({
+                amount: totalAmount * 100, // Convert amount to paise (1 INR = 100 paise)
                 currency: 'INR',
-                receipt: uuidv4(),
-                description: 'Order Payment',
+                receipt: uuidv4(),  // Unique receipt ID for this order
+                notes: {
+                    description: 'Order Payment',
+                },
                 customer: {
                     name: name,         // Customer's name
                     email: email,       // Customer's email
                     contact: phone,     // Customer's phone number
                 },
             });
-            console.log('Payment Link Created:', paymentLink);
+            console.log('Order Created:', order);
         } catch (razorpayError) {
             console.error('Razorpay API Error:', razorpayError);
             return res.status(500).json({
-                message: 'Error creating payment link',
+                message: 'Error creating order',
                 error: razorpayError.error?.description || 'Razorpay API Error',
             });
         }
 
-
-        const order = new Order({
-            orderId: paymentLink.id,
+        // Save the order in the database
+        const newOrder = new Order({
+            orderId: order.id,
             user,
             products,
             totalAmount,
             address,
-            paymentStatus: 'Pending',
+            paymentStatus: 'Pending',  // Set initial payment status as 'Pending'
         });
 
-        await order.save();
+        await newOrder.save();
 
+        // Respond with the created order and Razorpay payment link
         res.status(201).json({
             success: true,
             message: 'Order created successfully',
-            order,
-            paymentLink: paymentLink.short_url,
+            order: newOrder,
+            paymentLink: `https://rzp.io/l/${order.id}`,  // Provide payment link to user
         });
     } catch (error) {
         console.error('Error creating order:', error);
         res.status(500).json({ message: 'An error occurred while creating the order', error: error.message || error });
     }
 };
+
 
 
 
