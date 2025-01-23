@@ -37,6 +37,8 @@ async function sendOrderConfirmationEmail(order, userEmail, paymentLink) {
 }
 
 
+const { v4: uuidv4 } = require('uuid'); // Ensure uuid is required for receipt generation
+
 exports.createOrder = async (req, res) => {
     try {
         console.log('Request Body:', req.body); // Log incoming request body
@@ -92,12 +94,14 @@ exports.createOrder = async (req, res) => {
             });
         }
 
-      
-
+        // Create new order in database
         const newOrder = new Order({
             orderId: order.id,
             user,
-            products,
+            products: products.map(product => ({
+                productId: product.productId,  // Ensure productId is in correct format
+                quantity: product.quantity,
+            })),
             totalAmount,
             address,
             paymentStatus: 'Pending',
@@ -116,6 +120,7 @@ exports.createOrder = async (req, res) => {
         res.status(500).json({ message: 'An error occurred while creating the order', error: error.message || error });
     }
 };
+
 
 
 
