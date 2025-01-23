@@ -94,11 +94,15 @@ exports.createOrder = async (req, res) => {
             });
         }
 
-        // Save the order in the database
+        const formattedProducts = products.map(productId => ({
+            productId: mongoose.Types.ObjectId(productId),  // Convert to ObjectId
+            quantity: 1,  // Default quantity (adjust as needed)
+        }));
+
         const newOrder = new Order({
             orderId: order.id,
             user,
-            products,
+            products:formattedProducts,
             totalAmount,
             address,
             paymentStatus: 'Pending',  // Set initial payment status as 'Pending'
