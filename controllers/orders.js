@@ -35,11 +35,7 @@ async function sendOrderConfirmationEmail(order, userEmail, paymentLink) {
     await transporter.sendMail(mailOptions);
 }
 
-
-
-const Razorpay = require('razorpay');
-const { v4: uuidv4 } = require('uuid');
-const Order = require('../models/Order');  // Assuming you have an Order model
+l
 
 exports.createOrder = async (req, res) => {
     try {
