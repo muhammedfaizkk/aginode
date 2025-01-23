@@ -35,7 +35,6 @@ async function sendOrderConfirmationEmail(order, userEmail, paymentLink) {
     await transporter.sendMail(mailOptions);
 }
 
-l
 
 exports.createOrder = async (req, res) => {
     try {
