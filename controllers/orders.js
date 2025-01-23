@@ -80,11 +80,9 @@ exports.createOrder = async (req, res) => {
                 receipt: uuidv4(),  // Unique receipt ID for this order
                 notes: {
                     description: 'Order Payment',
-                },
-                customer: {
-                    name: name,         // Customer's name
-                    email: email,       // Customer's email
-                    contact: phone,     // Customer's phone number
+                    name: address.name,         // Customer's name
+                    email: address.email,       // Customer's email
+                    contact: address.phone,     // Customer's phone number
                 },
             });
             console.log('Order Created:', order);
