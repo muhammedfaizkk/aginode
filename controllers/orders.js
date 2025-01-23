@@ -69,9 +69,23 @@ exports.createOrder = async (req, res) => {
             amount: totalAmount * 100,
             currency: 'INR',
             receipt: uuidv4(),
-            customer_name: address.name,
-            customer_email: address.email,
+            description: 'Order Payment',
+            customer_name: name,
+            customer_email: email,
+            customer_contact: phone,
         });
+        console.log('Payload to Razorpay:', {
+            amount: totalAmount * 100,
+            currency: 'INR',
+            receipt: uuidv4(),
+            description: 'Order Payment',
+            customer: {
+                name: name,
+                email: email,
+                contact: phone,
+            },
+        });
+                
         
         const order = new Order({
             orderId: paymentLink.id,
