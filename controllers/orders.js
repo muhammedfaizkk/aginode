@@ -6,10 +6,6 @@ const nodemailer = require('nodemailer');
 const razorpay = require('razorpay');
 require('dotenv').config();
 
-// Initialize Razorpay instance
-
-
-// Function to send order confirmation email
 async function sendOrderConfirmationEmail(order, userEmail, paymentLink) {
     const transporter = nodemailer.createTransport({
         service: 'gmail',
@@ -39,63 +35,56 @@ async function sendOrderConfirmationEmail(order, userEmail, paymentLink) {
     await transporter.sendMail(mailOptions);
 }
 
-// Function to create an order
+
+
 exports.createOrder = async (req, res) => {
     try {
-        const razorpayInstance = new razorpay({
+        const razorpayInstance = new Razorpay({
             key_id: process.env.RAZORPAY_KEY_ID,
             key_secret: process.env.RAZORPAY_KEY_SECRET,
         });
+
         const { user, products, totalAmount, address } = req.body;
 
         // Validate input data
         if (!products.length || !totalAmount || !address) {
-            return res.status(400).json({ message: "All fields are required" });
+            return res.status(400).json({ message: 'All fields are required' });
         }
 
-        const { street, city, state, postalCode, phone, email,name } = address;
+        const { street, city, state, postalCode, phone, email, name } = address;
         if (!street || !city || !state || !postalCode || !phone || !email || !name) {
-            return res.status(400).json({ message: "Complete address details are required" });
+            return res.status(400).json({ message: 'Complete address details are required' });
         }
 
         const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         if (!emailRegex.test(email)) {
-            return res.status(400).json({ message: "Invalid email format" });
+            return res.status(400).json({ message: 'Invalid email format' });
         }
 
         const phoneRegex = /^[0-9]{10}$/;
         if (!phoneRegex.test(phone)) {
-            return res.status(400).json({ message: "Invalid phone number format" });
+            return res.status(400).json({ message: 'Invalid phone number format' });
         }
 
-        // Create Razorpay order
-        const razorpayOrder = await razorpayInstance.orders.create({
-            amount: totalAmount * 100,  // Amount in paise
+        // Create Razorpay Payment Link
+        const paymentLink = await razorpayInstance.paymentLink.create({
+            amount: totalAmount * 100, // Amount in paise
             currency: 'INR',
             receipt: uuidv4(),
-        });
-
-        
-        const paymentLink = await razorpayInstance.paymentLink.create({
-            amount: totalAmount * 100, 
-            currency: 'INR',
             description: 'Order Payment',
             customer: {
-                name: address.name,
-                email: address.email,
+                name,
+                email,
             },
             notify: {
-                email: true, 
+                email: true,
             },
-            expiration: {
-                duration: 3600,  
-            },
+            expire_by: Math.floor(Date.now() / 1000) + 3600, // Expires in 1 hour
         });
-        
 
-        
+        // Save the order in the database
         const order = new Order({
-            orderId: razorpayOrder.id,
+            orderId: paymentLink.id,
             user,
             products,
             totalAmount,
@@ -106,20 +95,20 @@ exports.createOrder = async (req, res) => {
         await order.save();
 
         // Send confirmation email with payment link
-        await sendOrderConfirmationEmail(order, address.email, paymentLink.short_url);
+        await sendOrderConfirmationEmail(order, email, paymentLink.short_url);
 
         res.status(201).json({
             success: true,
             message: 'Order created successfully',
             order,
-            razorpayOrderId: razorpayOrder.id,
             paymentLink: paymentLink.short_url,
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: 'An error occurred while creating the order', error: error.message });
     }
 };
+
 
 // Function to update payment status
 exports.updatePaymentStatus = async (req, res) => {
