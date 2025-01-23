@@ -49,8 +49,20 @@ exports.createOrder = async (req, res) => {
 
         const { user, products, totalAmount, address } = req.body;
 
-        if (!products.length || !totalAmount || !address) {
-            return res.status(400).json({ message: 'All fields are required' });
+        // Check if products array is properly populated
+        if (!Array.isArray(products) || !products.length) {
+            return res.status(400).json({ message: 'Products are required' });
+        }
+
+        // Validate each product
+        for (const product of products) {
+            if (!product.productId || !product.quantity) {
+                return res.status(400).json({ message: 'Each product must have a productId and quantity' });
+            }
+        }
+
+        if (!totalAmount || !address) {
+            return res.status(400).json({ message: 'Total amount and address are required' });
         }
 
         const { street, city, state, postalCode, phone, email, name } = address;
@@ -119,6 +131,7 @@ exports.createOrder = async (req, res) => {
         res.status(500).json({ message: 'An error occurred while creating the order', error: error.message || error });
     }
 };
+
 
 
 
