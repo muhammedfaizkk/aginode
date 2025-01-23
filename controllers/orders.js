@@ -72,24 +72,25 @@ exports.createOrder = async (req, res) => {
         let paymentLink;
         try {
             paymentLink = await razorpayInstance.paymentLink.create({
-                amount: totalAmount * 100,
+                amount: totalAmount * 100, // Convert amount to paise
                 currency: 'INR',
-                receipt: `receipt_${Date.now()}`,
+                receipt: uuidv4(),
                 description: 'Order Payment',
                 customer: {
-                    name: name,
-                    email: email,
-                    contact: phone,
+                    name: name,         // Customer's name
+                    email: email,       // Customer's email
+                    contact: phone,     // Customer's phone number
                 },
             });
-            console.log('Razorpay Payment Link Response:', paymentLink);
+            console.log('Payment Link Created:', paymentLink);
         } catch (razorpayError) {
             console.error('Razorpay API Error:', razorpayError);
             return res.status(500).json({
                 message: 'Error creating payment link',
-                error: razorpayError.message || 'Razorpay API Error',
+                error: razorpayError.error?.description || 'Razorpay API Error',
             });
         }
+
 
         const order = new Order({
             orderId: paymentLink.id,
