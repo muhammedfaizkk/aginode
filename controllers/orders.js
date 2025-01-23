@@ -45,8 +45,6 @@ exports.createOrder = async (req, res) => {
         });
 
         const { user, products, totalAmount, address } = req.body;
-
-        // Validate input data
         if (!products.length || !totalAmount || !address) {
             return res.status(400).json({ message: 'All fields are required' });
         }
@@ -66,20 +64,16 @@ exports.createOrder = async (req, res) => {
             return res.status(400).json({ message: 'Invalid phone number format' });
         }
 
-        // Create Razorpay Payment Link
+        
         const paymentLink = await razorpayInstance.paymentLink.create({
-            amount: totalAmount * 100, // Amount in paise
+            amount: totalAmount * 100,
             currency: 'INR',
             receipt: uuidv4(),
             description: 'Order Payment',
-            customer: {
-                name: name,
-                email: email,
-            },
+            customer_name: address.name,
+            customer_email: address.email,
         });
         
-
-        // Save the order in the database
         const order = new Order({
             orderId: paymentLink.id,
             user,
@@ -91,7 +85,6 @@ exports.createOrder = async (req, res) => {
 
         await order.save();
 
-        // Send confirmation email with payment link
         await sendOrderConfirmationEmail(order, email, paymentLink.short_url);
 
         res.status(201).json({
@@ -107,7 +100,6 @@ exports.createOrder = async (req, res) => {
 };
 
 
-// Function to update payment status
 exports.updatePaymentStatus = async (req, res) => {
     try {
         const { paymentId, orderId } = req.body;
@@ -139,7 +131,7 @@ exports.updatePaymentStatus = async (req, res) => {
     }
 };
 
-// Function to update order status
+
 exports.updateOrderStatus = async (req, res) => {
     try {
         const { orderId } = req.params;
