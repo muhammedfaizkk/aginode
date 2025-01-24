@@ -47,20 +47,30 @@ exports.createOrder = async (req, res) => {
 
         const { user, products, totalAmount, address } = req.body;
 
-        // Check if products array is properly populated
-        if (!Array.isArray(products) || !products.length) {
+        // Normalize products if the format is incorrect (array with alternating productId and quantity)
+        if (Array.isArray(products) && products.length % 2 === 0) {
+            const normalizedProducts = [];
+            for (let i = 0; i < products.length; i += 2) {
+                normalizedProducts.push({
+                    productId: products[i],
+                    quantity: parseInt(products[i + 1], 10),
+                });
+            }
+            req.body.products = normalizedProducts; // Replace the original products array with the normalized one
+        }
+
+        // Validate products array
+        if (!Array.isArray(req.body.products) || !req.body.products.length) {
             return res.status(400).json({ message: 'Products are required' });
         }
 
-        // Validate each product outside of the `forEach` loop
-        for (let i = 0; i < products.length; i++) {
-            const product = products[i];
+        req.body.products.forEach((product, index) => {
             if (!product.productId || !product.quantity) {
                 return res.status(400).json({
-                    message: `Missing productId or quantity in product at index ${i}`,
+                    message: `Missing productId or quantity in product at index ${index}`,
                 });
             }
-        }
+        });
 
         // Validate totalAmount and address
         if (!totalAmount || !address) {
@@ -82,7 +92,7 @@ exports.createOrder = async (req, res) => {
             return res.status(400).json({ message: 'Invalid phone number format' });
         }
 
-        console.log('Validated data:', { user, products, totalAmount, address });
+        console.log('Validated data:', { user, products: req.body.products, totalAmount, address });
 
         // Create the order using Razorpay
         let order;
@@ -108,8 +118,8 @@ exports.createOrder = async (req, res) => {
         }
 
         // Map products to match the Order schema
-        const mappedProducts = products.map(product => ({
-            productId: product.productId, // Ensure productId is in correct format
+        const mappedProducts = req.body.products.map(product => ({
+            productId: product.productId,
             quantity: product.quantity,
         }));
 
@@ -127,7 +137,7 @@ exports.createOrder = async (req, res) => {
 
         await newOrder.save();
 
-        return res.status(201).json({
+        res.status(201).json({
             success: true,
             message: 'Order created successfully',
             order: newOrder,
@@ -135,12 +145,7 @@ exports.createOrder = async (req, res) => {
         });
     } catch (error) {
         console.error('Error creating order:', error);
-        if (!res.headersSent) {
-            return res.status(500).json({
-                message: 'An error occurred while creating the order',
-                error: error.message || error,
-            });
-        }
+        res.status(500).json({ message: 'An error occurred while creating the order', error: error.message || error });
     }
 };
 
