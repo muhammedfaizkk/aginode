@@ -240,7 +240,7 @@ exports.deleteOrder = async (req, res) => {
 exports.getAllOrders = async (req, res) => {
     try {
         const orders = await Order.find()
-            .populate('user', 'name email');
+    
 
         const formattedOrders = await Promise.all(orders.map(async (order) => {
             const productsDetails = await Promise.all(order.products.map(async (item) => {
