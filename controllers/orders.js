@@ -38,7 +38,7 @@ async function sendOrderConfirmationEmail(order, userEmail, paymentLink) {
 
 exports.createOrder = async (req, res) => {
     try {
-        console.log('Request Body:', req.body); 
+        console.log('Request Body:', req.body);
 
         const razorpayInstance = new Razorpay({
             key_id: process.env.RAZORPAY_KEY_ID,
@@ -52,14 +52,15 @@ exports.createOrder = async (req, res) => {
             return res.status(400).json({ message: 'Products are required' });
         }
 
-        // Validate product details (productId and quantity)
-        products.forEach((product, index) => {
+        // Validate each product outside of the `forEach` loop
+        for (let i = 0; i < products.length; i++) {
+            const product = products[i];
             if (!product.productId || !product.quantity) {
-                return res.status(400).json({ 
-                    message: `Missing productId or quantity in product at index ${index}` 
+                return res.status(400).json({
+                    message: `Missing productId or quantity in product at index ${i}`,
                 });
             }
-        });
+        }
 
         // Validate totalAmount and address
         if (!totalAmount || !address) {
@@ -108,7 +109,7 @@ exports.createOrder = async (req, res) => {
 
         // Map products to match the Order schema
         const mappedProducts = products.map(product => ({
-            productId: product.productId,  // Ensure productId is in correct format
+            productId: product.productId, // Ensure productId is in correct format
             quantity: product.quantity,
         }));
 
@@ -126,7 +127,7 @@ exports.createOrder = async (req, res) => {
 
         await newOrder.save();
 
-        res.status(201).json({
+        return res.status(201).json({
             success: true,
             message: 'Order created successfully',
             order: newOrder,
@@ -134,9 +135,15 @@ exports.createOrder = async (req, res) => {
         });
     } catch (error) {
         console.error('Error creating order:', error);
-        res.status(500).json({ message: 'An error occurred while creating the order', error: error.message || error });
+        if (!res.headersSent) {
+            return res.status(500).json({
+                message: 'An error occurred while creating the order',
+                error: error.message || error,
+            });
+        }
     }
 };
+
 
 
 
