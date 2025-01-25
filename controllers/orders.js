@@ -215,7 +215,6 @@ exports.updateOrderStatus = async (req, res) => {
     }
 };
 
-r
 exports.deleteOrder = async (req, res) => {
     try {
         const { orderId } = req.params;
