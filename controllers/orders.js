@@ -45,45 +45,36 @@ exports.createOrder = async (req, res) => {
 
         const { user, products, totalAmount, address } = req.body;
 
-        // Normalize products if necessary
-        if (Array.isArray(products) && products.length % 2 === 0) {
-            const normalizedProducts = [];
-            for (let i = 0; i < products.length; i += 2) {
-                const quantity = parseInt(products[i + 1], 10);
-
-                // Check if quantity is valid (a positive number)
-                if (isNaN(quantity) || quantity <= 0) {
-                    return res.status(400).json({ message: `Invalid quantity at index ${i / 2}` });
-                }
-
-                normalizedProducts.push({
-                    productId: products[i],
-                    quantity,
-                });
-            }
-            req.body.products = normalizedProducts;
-        }
-
-        // Validate products
-        if (!Array.isArray(req.body.products) || !req.body.products.length) {
+        // Validate products structure
+        if (!Array.isArray(products) || products.length === 0) {
             return res.status(400).json({ message: 'Products are required' });
         }
 
-        for (let i = 0; i < req.body.products.length; i++) {
-            const product = req.body.products[i];
+        // Normalize products if necessary (based on your incoming data format)
+        const normalizedProducts = [];
+        for (let i = 0; i < products.length; i++) {
+            const product = products[i];
+
+            // Check if both productId and quantity are present
             if (!product.productId || !product.quantity) {
                 return res.status(400).json({
                     message: `Missing productId or quantity in product at index ${i}`,
                 });
             }
 
-            // Additional validation for quantity (positive number)
-            if (product.quantity <= 0) {
-                return res.status(400).json({
-                    message: `Invalid quantity at index ${i}. Quantity must be a positive number.`,
-                });
+            // Ensure quantity is a valid positive integer
+            const quantity = parseInt(product.quantity, 10);
+            if (isNaN(quantity) || quantity <= 0) {
+                return res.status(400).json({ message: `Invalid quantity at index ${i}` });
             }
+
+            normalizedProducts.push({
+                productId: product.productId,
+                quantity,
+            });
         }
+
+        req.body.products = normalizedProducts;
 
         // Validate totalAmount and address
         if (!totalAmount || !address) {
@@ -95,11 +86,13 @@ exports.createOrder = async (req, res) => {
             return res.status(400).json({ message: 'Complete address details are required' });
         }
 
+        // Validate email format
         const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         if (!emailRegex.test(email)) {
             return res.status(400).json({ message: 'Invalid email format' });
         }
 
+        // Validate phone number format
         const phoneRegex = /^[0-9]{10}$/;
         if (!phoneRegex.test(phone)) {
             return res.status(400).json({ message: 'Invalid phone number format' });
@@ -124,11 +117,10 @@ exports.createOrder = async (req, res) => {
             return res.status(500).json({
                 message: 'Error creating order',
                 error: razorpayError.error?.description || 'Razorpay API Error',
-                details: razorpayError.error || {},
             });
         }
 
-        // Create database order
+        // Create database order entry
         const mappedProducts = req.body.products.map(product => ({
             productId: product.productId,
             quantity: product.quantity,
@@ -145,7 +137,7 @@ exports.createOrder = async (req, res) => {
 
         await newOrder.save();
 
-        // Send response
+        // Send response with payment link
         return res.status(201).json({
             success: true,
             message: 'Order created successfully',
