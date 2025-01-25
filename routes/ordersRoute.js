@@ -18,8 +18,8 @@ router.route('/api/getAllorders').get(getAllOrders)
 router.route('/api/getAllorders/:orderId').get(getOrderById)
 router.route('/api/updateorder/:orderId').put(updateOrderStatus)
 router.route('/api/verifyPayment').post(verifyPayment);
-router.route('/api/deleteOrderAdmin').delete(deleteOrderAdmin);
-router.route('/api/deleteOrderUser').delete(deleteOrderUser);
+router.route('/api/deleteOrderAdmin/:orderId').delete(deleteOrderAdmin);
+router.route('/api/deleteOrderUser/:orderId').delete(deleteOrderUser);
 
 
 
