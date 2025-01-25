@@ -50,9 +50,12 @@ exports.createOrder = async (req, res) => {
             const normalizedProducts = [];
             for (let i = 0; i < products.length; i += 2) {
                 const quantity = parseInt(products[i + 1], 10);
-                if (isNaN(quantity)) {
-                    return res.status(400).json({ message: `Invalid quantity at index ${i}` });
+
+                // Check if quantity is valid (a positive number)
+                if (isNaN(quantity) || quantity <= 0) {
+                    return res.status(400).json({ message: `Invalid quantity at index ${i / 2}` });
                 }
+
                 normalizedProducts.push({
                     productId: products[i],
                     quantity,
@@ -71,6 +74,13 @@ exports.createOrder = async (req, res) => {
             if (!product.productId || !product.quantity) {
                 return res.status(400).json({
                     message: `Missing productId or quantity in product at index ${i}`,
+                });
+            }
+
+            // Additional validation for quantity (positive number)
+            if (product.quantity <= 0) {
+                return res.status(400).json({
+                    message: `Invalid quantity at index ${i}. Quantity must be a positive number.`,
                 });
             }
         }
@@ -152,7 +162,6 @@ exports.createOrder = async (req, res) => {
         }
     }
 };
-
 
 
 
