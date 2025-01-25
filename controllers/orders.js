@@ -161,34 +161,62 @@ exports.createOrder = async (req, res) => {
 
 
 
-exports.updatePaymentStatus = async (req, res) => {
+exports.verifyPayment = async (req, res) => {
     try {
-        const { paymentId, orderId } = req.body;
+        const { paymentId, orderId, razorpayPaymentId, razorpaySignature } = req.body; // Details sent from frontend
 
-        if (!paymentId || !orderId) {
-            return res.status(400).json({ message: "Payment ID and Order ID are required" });
+        if (!paymentId || !orderId || !razorpayPaymentId || !razorpaySignature) {
+            return res.status(400).json({ message: "Payment ID, Order ID, Razorpay Payment ID, and Signature are required" });
         }
 
+        // Verify the payment with Razorpay (use Razorpay's API or SDK to verify payment)
+        const paymentVerificationResponse = await verifyRazorpayPayment(razorpayPaymentId, razorpaySignature);
+
+        if (!paymentVerificationResponse.success) {
+            return res.status(400).json({ message: "Payment verification failed" });
+        }
+
+        // Find the order using the orderId
         const order = await Order.findOne({ orderId });
         if (!order) {
             return res.status(404).json({ message: "Order not found" });
         }
 
+        // If the payment is successful, update the order payment status and paymentId
         order.paymentStatus = 'Completed';
         order.paymentId = paymentId;
         await order.save();
 
-
+        // Send an email confirmation (assuming you have an email service)
         const userEmail = order.address.email;
         await sendOrderConfirmationEmail(order, userEmail, 'Payment Successful');
 
         res.status(200).json({
             success: true,
-            message: 'Payment status updated successfully',
+            message: 'Payment verified and order updated successfully',
             order,
         });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Error verifying payment:', error);
+        res.status(500).json({ message: error.message || 'Internal server error' });
+    }
+};
+
+// Helper function to verify Razorpay payment (using Razorpay API)
+const verifyRazorpayPayment = async (razorpayPaymentId, razorpaySignature) => {
+    const razorpaySecret = process.env.RAZORPAY_SECRET_KEY; // Your Razorpay secret key
+
+    const body = razorpayPaymentId + '|' + razorpaySignature;
+    const crypto = require('crypto');
+    const expectedSignature = crypto
+        .createHmac('sha256', razorpaySecret)
+        .update(body)
+        .digest('hex');
+
+    if (expectedSignature === razorpaySignature) {
+        return { success: true };
+    } else {
+        return { success: false };
     }
 };
 
@@ -240,48 +268,23 @@ exports.deleteOrder = async (req, res) => {
     }
 };
 
-// Function to get all orders
+
 exports.getAllOrders = async (req, res) => {
     try {
         const orders = await Order.find()
 
-
-        const formattedOrders = await Promise.all(orders.map(async (order) => {
-            const productsDetails = await Promise.all(order.products.map(async (item) => {
-                const product = await Product.findById(item.productId);
-                if (product) {
-                    return {
-                        productName: product.productName,
-                        price: product.price,
-                        quantity: item.quantity,
-                        totalPrice: item.quantity * product.price,
-                    };
-                } else {
-                    return null;
-                }
-            }));
-
-            return {
-                orderId: order.orderId,
-                user: order.user,
-                products: productsDetails.filter(product => product !== null),
-                totalAmount: order.totalAmount,
-                address: order.address,
-                status: order.status,
-                createdAt: order.createdAt,
-                updatedAt: order.updatedAt,
-            };
-        }));
-
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
-            orders: formattedOrders,
+            orders,
         });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Error fetching orders:', error);
+        return res.status(500).json({
+            message: 'An error occurred while fetching orders',
+            error: error.message || error,
+        });
     }
 };
-
 // Function to get an order by ID
 exports.getOrderById = async (req, res) => {
     try {
@@ -301,5 +304,70 @@ exports.getOrderById = async (req, res) => {
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
+    }
+};
+
+
+
+
+exports.deleteOrderAdmin = async (req, res) => {
+    try {
+        // Check if the user is an admin (ensure req.user has the role or authorization
+        const { orderId } = req.params;
+
+        // Find and delete the order by its orderId
+        const order = await Order.findOneAndDelete({ orderId });
+
+        if (!order) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+
+        // Return success response
+        return res.status(200).json({
+            success: true,
+            message: `Order with orderId ${orderId} deleted successfully.`,
+        });
+    } catch (error) {
+        console.error('Error deleting order:', error);
+        return res.status(500).json({
+            message: 'An error occurred while deleting the order',
+            error: error.message || error,
+        });
+    }
+};
+
+
+
+exports.deleteOrderUser = async (req, res) => {
+    try {
+        // Get the userId from the decoded token (req.user) and the orderId from params
+        const { orderId } = req.params;
+        const userId = req.user._id; // Assumes req.user contains the decoded user info from JWT
+
+        // Find the order by its orderId and check if it belongs to the user
+        const order = await Order.findOne({ orderId });
+
+        if (!order) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+
+        if (order.user.toString() !== userId.toString()) {
+            return res.status(403).json({ message: 'You can only delete your own orders' });
+        }
+
+        // Delete the order
+        await Order.findOneAndDelete({ orderId });
+
+        // Return success response
+        return res.status(200).json({
+            success: true,
+            message: `Order with orderId ${orderId} deleted successfully.`,
+        });
+    } catch (error) {
+        console.error('Error deleting order:', error);
+        return res.status(500).json({
+            message: 'An error occurred while deleting the order',
+            error: error.message || error,
+        });
     }
 };
