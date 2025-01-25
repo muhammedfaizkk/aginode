@@ -38,7 +38,6 @@ async function sendOrderConfirmationEmail(order, userEmail, paymentLink) {
 
 exports.createOrder = async (req, res) => {
     try {
-        
         const razorpayInstance = new Razorpay({
             key_id: process.env.RAZORPAY_KEY_ID,
             key_secret: process.env.RAZORPAY_KEY_SECRET,
@@ -46,7 +45,7 @@ exports.createOrder = async (req, res) => {
 
         const { user, products, totalAmount, address } = req.body;
 
-        // Normalize products if the format is incorrect (array with alternating productId and quantity)
+        // Normalize products if necessary
         if (Array.isArray(products) && products.length % 2 === 0) {
             const normalizedProducts = [];
             for (let i = 0; i < products.length; i += 2) {
@@ -55,21 +54,22 @@ exports.createOrder = async (req, res) => {
                     quantity: parseInt(products[i + 1], 10),
                 });
             }
-            req.body.products = normalizedProducts; // Replace the original products array with the normalized one
+            req.body.products = normalizedProducts;
         }
 
-        // Validate products array
+        // Validate products
         if (!Array.isArray(req.body.products) || !req.body.products.length) {
             return res.status(400).json({ message: 'Products are required' });
         }
 
-        req.body.products.forEach((product, index) => {
+        for (let i = 0; i < req.body.products.length; i++) {
+            const product = req.body.products[i];
             if (!product.productId || !product.quantity) {
                 return res.status(400).json({
-                    message: `Missing productId or quantity in product at index ${index}`,
+                    message: `Missing productId or quantity in product at index ${i}`,
                 });
             }
-        });
+        }
 
         // Validate totalAmount and address
         if (!totalAmount || !address) {
@@ -91,13 +91,11 @@ exports.createOrder = async (req, res) => {
             return res.status(400).json({ message: 'Invalid phone number format' });
         }
 
-        console.log('Validated data:', { user, products: req.body.products, totalAmount, address });
-
-        // Create the order using Razorpay
-        let order;
+        // Create Razorpay order
+        let razorpayOrder;
         try {
-            order = await razorpayInstance.orders.create({
-                amount: totalAmount * 100,
+            razorpayOrder = await razorpayInstance.orders.create({
+                amount: totalAmount * 100, // Razorpay expects amount in paise
                 currency: 'INR',
                 receipt: uuidv4(),
                 notes: {
@@ -107,7 +105,6 @@ exports.createOrder = async (req, res) => {
                     contact: address.phone,
                 },
             });
-            console.log('Order Created:', order);
         } catch (razorpayError) {
             console.error('Razorpay API Error:', razorpayError);
             return res.status(500).json({
@@ -116,15 +113,14 @@ exports.createOrder = async (req, res) => {
             });
         }
 
-        // Map products to match the Order schema
+        // Create database order
         const mappedProducts = req.body.products.map(product => ({
             productId: product.productId,
             quantity: product.quantity,
         }));
 
-        // Create new order in database
         const newOrder = new Order({
-            orderId: order.id,
+            orderId: razorpayOrder.id,
             user,
             products: mappedProducts,
             totalAmount,
@@ -132,18 +128,23 @@ exports.createOrder = async (req, res) => {
             paymentStatus: 'Pending',
         });
 
-
         await newOrder.save();
 
-        res.status(201).json({
+        // Send response
+        return res.status(201).json({
             success: true,
             message: 'Order created successfully',
             order: newOrder,
-            paymentLink: `https://rzp.io/l/${order.id}`,
+            paymentLink: `https://rzp.io/l/${razorpayOrder.id}`,
         });
     } catch (error) {
         console.error('Error creating order:', error);
-        res.status(500).json({ message: 'An error occurred while creating the order', error: error.message || error });
+        if (!res.headersSent) {
+            return res.status(500).json({
+                message: 'An error occurred while creating the order',
+                error: error.message || error,
+            });
+        }
     }
 };
 
