@@ -49,9 +49,13 @@ exports.createOrder = async (req, res) => {
         if (Array.isArray(products) && products.length % 2 === 0) {
             const normalizedProducts = [];
             for (let i = 0; i < products.length; i += 2) {
+                const quantity = parseInt(products[i + 1], 10);
+                if (isNaN(quantity)) {
+                    return res.status(400).json({ message: `Invalid quantity at index ${i}` });
+                }
                 normalizedProducts.push({
                     productId: products[i],
-                    quantity: parseInt(products[i + 1], 10),
+                    quantity,
                 });
             }
             req.body.products = normalizedProducts;
@@ -110,6 +114,7 @@ exports.createOrder = async (req, res) => {
             return res.status(500).json({
                 message: 'Error creating order',
                 error: razorpayError.error?.description || 'Razorpay API Error',
+                details: razorpayError.error || {},
             });
         }
 
@@ -238,7 +243,7 @@ exports.deleteOrder = async (req, res) => {
 exports.getAllOrders = async (req, res) => {
     try {
         const orders = await Order.find()
-    
+
 
         const formattedOrders = await Promise.all(orders.map(async (order) => {
             const productsDetails = await Promise.all(order.products.map(async (item) => {
