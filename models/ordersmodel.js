@@ -15,14 +15,14 @@ const orderSchema = new mongoose.Schema(
         products: [
             {
                 productId: {
-                    type: String,  // Reference to Product model (or can be a simple String if product details are kept separately)
-                    ref: "Product",  // Optional if you have a Product collection to reference
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "Product", 
                     required: true,
                 },
                 quantity: {
                     type: Number,
                     required: true,
-                    min: 1, // Ensure quantity is a positive integer
+                    min: 1,
                 },
             },
         ],

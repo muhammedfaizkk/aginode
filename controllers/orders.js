@@ -38,8 +38,7 @@ async function sendOrderConfirmationEmail(order, userEmail, paymentLink) {
 
 exports.createOrder = async (req, res) => {
     try {
-        console.log('Request Body:', req.body);
-
+        
         const razorpayInstance = new Razorpay({
             key_id: process.env.RAZORPAY_KEY_ID,
             key_secret: process.env.RAZORPAY_KEY_SECRET,
@@ -133,7 +132,6 @@ exports.createOrder = async (req, res) => {
             paymentStatus: 'Pending',
         });
 
-        console.log('New Order:', newOrder);
 
         await newOrder.save();
 
@@ -217,7 +215,7 @@ exports.updateOrderStatus = async (req, res) => {
     }
 };
 
-// Function to delete an order
+r
 exports.deleteOrder = async (req, res) => {
     try {
         const { orderId } = req.params;
