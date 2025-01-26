@@ -33,11 +33,11 @@ exports.signup = async (req, res) => {
                 id: user._id,
                 name: user.name,
                 email: user.email,
-                role:user.role
+                role: user.role
             },
         });
     } catch (error) {
-        console.error("Error during signup:", error); 
+        console.error("Error during signup:", error);
         res.status(500).json({
             message: "An unexpected error occurred",
             error: error.message,
@@ -86,7 +86,6 @@ exports.signin = async (req, res, next) => {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production", // Use HTTPS in production
             sameSite: "strict", // Prevent CSRF
-           maxAge: 30 * 24 * 60 * 60 * 1000, 
         });
 
         // Send response with user info and token

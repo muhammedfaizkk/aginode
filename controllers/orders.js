@@ -21,15 +21,31 @@ async function sendOrderConfirmationEmail(order, userEmail, paymentLink) {
         to: userEmail,
         subject: `Order Confirmation - Order #${order.orderId}`,
         html: `
-            <h1>Order Confirmation</h1>
-            <p>Thank you for your order!</p>
-            <p><strong>Order ID:</strong> ${order.orderId}</p>
-            <p><strong>Total Amount:</strong> ₹${order.totalAmount}</p>
-            <p><strong>Order Placed At:</strong> ${new Date(order.createdAt).toLocaleString()}</p>
-            <h3>Shipping Address</h3>
-            <p>${order.address.street}, ${order.address.city}, ${order.address.state}, ${order.address.postalCode}</p>
-            <p><strong>Contact:</strong> ${order.address.phone}</p>
-            <p><a href="${paymentLink}" target="_blank">Click here to make the payment</a></p>
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9;">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h1 style="color: #4CAF50;">Thank You for Your Order!</h1>
+                <p style="font-size: 18px; color: #555;">We're excited to let you know that your order has been confirmed.</p>
+            </div>
+
+            <div style="background-color: #ffffff; padding: 15px 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);">
+                <h2 style="color: #4CAF50; border-bottom: 2px solid #4CAF50; padding-bottom: 5px;">Order Details</h2>
+                <p style="margin: 10px 0;"><strong>Order ID:</strong> ${order.orderId}</p>
+                <p style="margin: 10px 0;"><strong>Total Amount:</strong> ₹${order.totalAmount}</p>
+                <p style="margin: 10px 0;"><strong>Order Placed At:</strong> ${new Date(order.createdAt).toLocaleString()}</p>
+            </div>
+
+            <div style="margin-top: 20px; background-color: #ffffff; padding: 15px 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);">
+                <h2 style="color: #4CAF50; border-bottom: 2px solid #4CAF50; padding-bottom: 5px;">Shipping Address</h2>
+                <p style="margin: 10px 0;">${order.address.street},</p>
+                <p style="margin: 10px 0;">${order.address.city}, ${order.address.state} - ${order.address.postalCode}</p>
+                <p style="margin: 10px 0;"><strong>Contact:</strong> ${order.address.phone}</p>
+            </div>
+
+            <div style="margin-top: 20px; text-align: center;">
+                <p style="font-size: 16px; color: #555;">If you have any questions, please contact our <a href="mailto:support@example.com" style="color: #4CAF50; text-decoration: none;">support team</a>.</p>
+                <p style="font-size: 16px; color: #555;">Thank you for shopping with us!</p>
+            </div>
+        </div>
         `,
     };
 
