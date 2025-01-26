@@ -157,24 +157,19 @@ exports.createOrder = async (req, res) => {
 
 
 
-
-
-
 exports.verifyPayment = async (req, res) => {
     try {
-        const { orderId, paymentId, razorpaySignature } = req.body;
+        const { orderId, razorpayPaymentId, razorpaySignature } = req.body; // Details sent from frontend
 
-        if (!orderId || !paymentId || !razorpaySignature) {
+        if (!orderId || !razorpayPaymentId || !razorpaySignature) {
             return res.status(400).json({ message: "Order ID, Razorpay Payment ID, and Signature are required" });
         }
-        const body = `${orderId}|${paymentId}`;
-        const expectedSignature = crypto
-            .createHmac('sha256', process.env.RAZORPAY_SECRET_KEY)
-            .update(body)
-            .digest('hex');
 
-        if (expectedSignature !== razorpaySignature) {
-            return res.status(400).json({ message: "Invalid Razorpay signature" });
+        // Verify the payment with Razorpay
+        const isPaymentVerified = verifyRazorpayPayment(orderId, razorpayPaymentId, razorpaySignature);
+
+        if (!isPaymentVerified) {
+            return res.status(400).json({ message: "Payment verification failed" });
         }
 
         const order = await Order.findOne({ orderId });
@@ -182,12 +177,12 @@ exports.verifyPayment = async (req, res) => {
             return res.status(404).json({ message: "Order not found" });
         }
 
-        // Update order payment status
+        // If the payment is successful, update the order payment status and paymentId
         order.paymentStatus = 'Completed';
-        order.paymentId = paymentId;
+        order.paymentId = razorpayPaymentId;
         await order.save();
 
-      
+        // Send an email confirmation (assuming you have an email service)
         const userEmail = order.address.email;
         await sendOrderConfirmationEmail(order, userEmail, 'Payment Successful');
 
@@ -201,6 +196,25 @@ exports.verifyPayment = async (req, res) => {
         res.status(500).json({ message: error.message || 'Internal server error' });
     }
 };
+
+// Function to verify Razorpay payment
+const verifyRazorpayPayment = (orderId, razorpayPaymentId, razorpaySignature) => {
+    const razorpaySecret = process.env.RAZORPAY_SECRET_KEY; // Your Razorpay secret key
+
+    if (!razorpaySecret) {
+        console.error('Razorpay secret key is not defined');
+        throw new Error('Razorpay secret key is missing');
+    }
+
+    const body = `${orderId}|${razorpayPaymentId}`; // Correct body format
+    const expectedSignature = crypto
+        .createHmac('sha256', razorpaySecret)
+        .update(body)
+        .digest('hex');
+
+    return expectedSignature === razorpaySignature; // Returns true or false
+};
+
 
 
 exports.updateOrderStatus = async (req, res) => {
