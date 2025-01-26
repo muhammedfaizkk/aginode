@@ -199,7 +199,7 @@ exports.verifyPayment = async (req, res) => {
 
 // Function to verify Razorpay payment
 const verifyRazorpayPayment = (orderId, razorpayPaymentId, razorpaySignature) => {
-    const razorpaySecret = process.env.RAZORPAY_SECRET_KEY; // Your Razorpay secret key
+    const razorpaySecret = process.env.RAZORPAY_KEY_SECRET; // Your Razorpay secret key
 
     if (!razorpaySecret) {
         console.error('Razorpay secret key is not defined');
@@ -287,6 +287,27 @@ exports.getOrderById = async (req, res) => {
     }
 };
 
+exports.getOrdersByUserId = async (req, res) => {
+    try {
+        const { userId } = req.params; // Extract userId from the request parameters
+
+        // Find all orders for the given userId
+        const orders = await Order.find({ user: userId }) // Assuming the `user` field in the Order schema refers to the userId
+            .populate('user', 'name email') // Populate user details (name and email)
+            .populate('products.productId', 'productName price'); // Populate product details (name and price)
+
+        if (!orders || orders.length === 0) {
+            return res.status(404).json({ message: "No orders found for this user" });
+        }
+
+        res.status(200).json({
+            success: true,
+            orders, // Return the list of orders
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
 
 
 
