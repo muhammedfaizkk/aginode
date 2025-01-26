@@ -162,31 +162,37 @@ exports.createOrder = async (req, res) => {
 
 exports.verifyPayment = async (req, res) => {
     try {
-        const { paymentId, orderId, razorpayPaymentId, razorpaySignature } = req.body; // Details sent from frontend
+        const { orderId, paymentId, razorpaySignature } = req.body;
 
-        if (!paymentId || !orderId || !razorpayPaymentId || !razorpaySignature) {
-            return res.status(400).json({ message: "Payment ID, Order ID, Razorpay Payment ID, and Signature are required" });
+        if (!orderId || !paymentId || !razorpaySignature) {
+            return res.status(400).json({ message: "Order ID, Razorpay Payment ID, and Signature are required" });
         }
 
-        // Verify the payment with Razorpay (use Razorpay's API or SDK to verify payment)
-        const paymentVerificationResponse = await verifyRazorpayPayment(razorpayPaymentId, razorpaySignature);
+        // Razorpay signature verification
+        const body = `${orderId}|${paymentId}`;
+        const expectedSignature = crypto
+            .createHmac('sha256', process.env.RAZORPAY_SECRET_KEY)
+            .update(body)
+            .digest('hex');
 
-        if (!paymentVerificationResponse.success) {
-            return res.status(400).json({ message: "Payment verification failed" });
+        if (expectedSignature !== razorpaySignature) {
+            return res.status(400).json({ message: "Invalid Razorpay signature" });
         }
+
+        // Find the order in the database
         const order = await Order.findOne({ orderId });
         if (!order) {
             return res.status(404).json({ message: "Order not found" });
         }
 
-        // If the payment is successful, update the order payment status and paymentId
+        // Update order payment status
         order.paymentStatus = 'Completed';
         order.paymentId = paymentId;
         await order.save();
 
-        // Send an email confirmation (assuming you have an email service)
-        const userEmail = order.address.email;
-        await sendOrderConfirmationEmail(order, userEmail, 'Payment Successful');
+        // Send email confirmation (optional, if implemented)
+        // const userEmail = order.address.email;
+        // await sendOrderConfirmationEmail(order, userEmail, 'Payment Successful');
 
         res.status(200).json({
             success: true,
@@ -194,26 +200,8 @@ exports.verifyPayment = async (req, res) => {
             order,
         });
     } catch (error) {
-        console.error('Error verifying payment:', error);
+        console.error('Error verifying payment:', error.message, error.stack);
         res.status(500).json({ message: error.message || 'Internal server error' });
-    }
-};
-
-// Helper function to verify Razorpay payment (using Razorpay API)
-const verifyRazorpayPayment = async (razorpayPaymentId, razorpaySignature) => {
-    const razorpaySecret = process.env.RAZORPAY_SECRET_KEY; // Your Razorpay secret key
-
-    const body = razorpayPaymentId + '|' + razorpaySignature;
-    const crypto = require('crypto');
-    const expectedSignature = crypto
-        .createHmac('sha256', razorpaySecret)
-        .update(body)
-        .digest('hex');
-
-    if (expectedSignature === razorpaySignature) {
-        return { success: true };
-    } else {
-        return { success: false };
     }
 };
 
