@@ -142,7 +142,6 @@ exports.createOrder = async (req, res) => {
             success: true,
             message: 'Order created successfully',
             order: newOrder,
-            paymentLink: `https://rzp.io/l/${razorpayOrder.id}`,
         });
     } catch (error) {
         console.error('Error creating order:', error);
@@ -175,8 +174,6 @@ exports.verifyPayment = async (req, res) => {
         if (!paymentVerificationResponse.success) {
             return res.status(400).json({ message: "Payment verification failed" });
         }
-
-        // Find the order using the orderId
         const order = await Order.findOne({ orderId });
         if (!order) {
             return res.status(404).json({ message: "Order not found" });
@@ -250,23 +247,7 @@ exports.updateOrderStatus = async (req, res) => {
     }
 };
 
-exports.deleteOrder = async (req, res) => {
-    try {
-        const { orderId } = req.params;
 
-        const order = await Order.findOneAndDelete({ orderId });
-        if (!order) {
-            return res.status(404).json({ message: "Order not found" });
-        }
-
-        res.status(200).json({
-            success: true,
-            message: "Order deleted successfully",
-        });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
 
 
 exports.getAllOrders = async (req, res) => {
@@ -369,5 +350,19 @@ exports.deleteOrderUser = async (req, res) => {
             message: 'An error occurred while deleting the order',
             error: error.message || error,
         });
+    }
+};
+
+
+exports.deleteAllOrders = async (req, res) => {
+    try {
+        const result = await Order.deleteMany({}); // Deletes all orders in the collection
+
+        res.status(200).json({
+            success: true,
+            message: `${result.deletedCount} orders deleted successfully`,
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
 };
