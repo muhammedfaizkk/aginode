@@ -4,7 +4,7 @@ const User = require('../models/usersmodel');  // Assuming the user model is nam
 const { v4: uuidv4 } = require('uuid');
 const nodemailer = require('nodemailer');
 const Razorpay = require('razorpay');
-const mongoose = require("mongoose");
+const crypto = require('crypto');
 require('dotenv').config();
 
 async function sendOrderConfirmationEmail(order, userEmail, paymentLink) {
@@ -167,8 +167,6 @@ exports.verifyPayment = async (req, res) => {
         if (!orderId || !paymentId || !razorpaySignature) {
             return res.status(400).json({ message: "Order ID, Razorpay Payment ID, and Signature are required" });
         }
-
-        // Razorpay signature verification
         const body = `${orderId}|${paymentId}`;
         const expectedSignature = crypto
             .createHmac('sha256', process.env.RAZORPAY_SECRET_KEY)
@@ -179,7 +177,6 @@ exports.verifyPayment = async (req, res) => {
             return res.status(400).json({ message: "Invalid Razorpay signature" });
         }
 
-        // Find the order in the database
         const order = await Order.findOne({ orderId });
         if (!order) {
             return res.status(404).json({ message: "Order not found" });
@@ -190,9 +187,9 @@ exports.verifyPayment = async (req, res) => {
         order.paymentId = paymentId;
         await order.save();
 
-        // Send email confirmation (optional, if implemented)
-        // const userEmail = order.address.email;
-        // await sendOrderConfirmationEmail(order, userEmail, 'Payment Successful');
+      
+        const userEmail = order.address.email;
+        await sendOrderConfirmationEmail(order, userEmail, 'Payment Successful');
 
         res.status(200).json({
             success: true,
