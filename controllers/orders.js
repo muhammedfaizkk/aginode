@@ -267,11 +267,29 @@ exports.updateOrderStatus = async (req, res) => {
 
 exports.getAllOrders = async (req, res) => {
     try {
+        // Extract page and limit from query parameters with default values
+        const page = parseInt(req.query.page) || 1; // Default page is 1
+        const limit = parseInt(req.query.limit) || 20; // Default limit is 20
+
+        // Calculate the skip value
+        const skip = (page - 1) * limit;
+
+        // Fetch orders with pagination
         const orders = await Order.find()
+            .skip(skip)
+            .limit(limit);
+
+        // Get total order count for pagination metadata
+        const totalOrders = await Order.countDocuments();
 
         return res.status(200).json({
             success: true,
             orders,
+            pagination: {
+                totalOrders,
+                currentPage: page,
+                totalPages: Math.ceil(totalOrders / limit),
+            },
         });
     } catch (error) {
         console.error('Error fetching orders:', error);
@@ -281,7 +299,7 @@ exports.getAllOrders = async (req, res) => {
         });
     }
 };
-// Function to get an order by ID
+
 exports.getOrderById = async (req, res) => {
     try {
         const { orderId } = req.params;
