@@ -332,7 +332,7 @@ exports.getOrderById = async (req, res) => {
 exports.getOrdersByUserId = async (req, res) => {
     try {
         const userId = req.userId; 
-        const orders = await Order.find({ user: userId }) 
+        const orders = await Order.findById({ user: userId }) 
             .populate('user', 'name email') 
             .populate('products.productId', 'productName price'); 
 
@@ -342,7 +342,7 @@ exports.getOrdersByUserId = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            orders, // Return the list of orders
+            orders, 
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
