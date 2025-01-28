@@ -47,7 +47,8 @@ exports.getFavorites = async (req, res) => {
         // If no wishlist is found, send a 404 response
         if (!favorite || favorite.products.length === 0) {
             return res.status(404).json({ 
-                success: false, 
+                success: true, 
+                products: [],  
                 message: "No wishlisted products found." 
             });
         }
