@@ -20,7 +20,7 @@ const protectRoute = async (req, res, next) => {
         // Fetch user from database
         const user = await Users.findById(decoded.id).select('-password');
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            return res.status(403).json({ message: 'User not found, access forbidden' });
         }
 
         req.user = user;
@@ -35,7 +35,7 @@ const protectRoute = async (req, res, next) => {
             });
         }
 
-        return res.status(401).json({ message: 'Invalid token, authorization denied' });
+        return res.status(401).json({ message: 'Invalid token, authorization denied', error: error.message });
     }
 };
 
