@@ -331,23 +331,35 @@ exports.getOrderById = async (req, res) => {
 
 exports.getOrdersByUserId = async (req, res) => {
     try {
-        const userId = req.user._id; 
-        const orders = await Order.find({ user: userId }) // Assuming the `user` field in the Order schema refers to the userId
-            .populate('user', 'name email') // Populate user details (name and email)
-            .populate('products.productId', 'productName price'); // Populate product details (name and price)
+        // Extract userId from URL params
+        const userId = req.params.userId; 
 
+        // Fetch orders based on the user ID
+        const orders = await Order.find({ user: userId }) 
+            .populate('user', 'name email') // Populate user details like name and email
+            .populate('products.productId', 'productName price'); // Populate product details like name and price
+
+        // If no orders found, return a 404 status with an appropriate message
         if (!orders || orders.length === 0) {
             return res.status(404).json({ message: "No orders found for this user" });
         }
 
+        // Send the successful response with orders data
         res.status(200).json({
             success: true,
             orders, // Return the list of orders
         });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        // Handle unexpected errors gracefully
+        console.error('Error fetching orders:', error); // Log error for debugging
+        res.status(500).json({
+            success: false,
+            message: 'An error occurred while fetching orders. Please try again later.',
+            error: error.message, // Sending error message for debugging purposes
+        });
     }
 };
+
 
 
 
