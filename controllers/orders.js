@@ -3,6 +3,7 @@ const Product = require('../models/ProudctModel');
 const User = require('../models/usersmodel');  // Assuming the user model is named 'UserModel'
 const { v4: uuidv4 } = require('uuid');
 const nodemailer = require('nodemailer');
+const mongoose = require('mongoose');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
 require('dotenv').config();
