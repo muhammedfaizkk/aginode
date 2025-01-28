@@ -280,7 +280,6 @@ exports.getAllOrders = async (req, res) => {
         const page = parseInt(req.query.page) || 1; // Default page is 1
         const limit = parseInt(req.query.limit) || 20; // Default limit is 20
 
-        // Calculate the skip value
         const skip = (page - 1) * limit;
 
         // Fetch orders with pagination
@@ -335,31 +334,43 @@ exports.getOrdersByUserId = async (req, res) => {
         // Extract userId from URL params
         const userId = req.params.userId; 
 
+        // Validate userId format
         if (!mongoose.Types.ObjectId.isValid(userId)) {
-            return res.status(400).json({ message: "Invalid user ID" });
+            return res.status(400).json({
+                success: false,
+                message: "Invalid user ID format. Please provide a valid ObjectId.",
+            });
         }
+
+        // Convert to ObjectId
         const userObjectId = mongoose.Types.ObjectId(userId);
-        const orders = await Order.find({ user: userObjectId }) 
-            .populate('user', 'name email') // Populate user details like name and email
-            .populate('products.productId', 'productName price'); // Populate product details like name and price
 
-        // If no orders found, return a 404 status with an appropriate message
+        // Fetch orders for the user
+        const orders = await Order.find({ user: userObjectId })
+            .populate('user', 'name email') // Populate user details
+            .populate('products.productId', 'productName price'); // Populate product details
+
+        // Handle case when no orders are found
         if (!orders || orders.length === 0) {
-            return res.status(404).json({ message: "No orders found for this user" });
+            console.warn(`No orders found for user ID: ${userId}`);
+            return res.status(404).json({
+                success: false,
+                message: "No orders found for this user.",
+            });
         }
 
-        // Send the successful response with orders data
+        // Send successful response
         res.status(200).json({
             success: true,
-            orders, // Return the list of orders
+            message: "Orders fetched successfully",
+            data: orders,
         });
     } catch (error) {
         // Handle unexpected errors gracefully
-        console.error('Error fetching orders:', error); // Log error for debugging
+        console.error("Error fetching orders:", error); // Log for debugging
         res.status(500).json({
             success: false,
-            message: 'An error occurred while fetching orders. Please try again later.',
-            error: error.message, // Sending error message for debugging purposes
+            message: "An unexpected error occurred. Please try again later.",
         });
     }
 };
