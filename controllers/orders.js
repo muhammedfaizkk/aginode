@@ -66,7 +66,7 @@ exports.createOrder = async (req, res) => {
             return res.status(400).json({ message: 'Products are required' });
         }
 
-        // Normalize products if necessary (based on your incoming data format)
+       
         const normalizedProducts = [];
         for (let i = 0; i < products.length; i++) {
             const product = products[i];
@@ -142,17 +142,25 @@ exports.createOrder = async (req, res) => {
             quantity: product.quantity,
         }));
 
-        const newOrder = new Order({
+        const newOrderData = {
             orderId: razorpayOrder.id,
-            user,
             products: mappedProducts,
             totalAmount,
             address,
             paymentStatus: 'Pending',
-        });
-
+        };
+        
+        // Add the user to the order only if it exists
+        if (user) {
+            newOrderData.user = user;
+        }
+        
+        // Create the new order
+        const newOrder = new Order(newOrderData);
+        
+        // Save the order
         await newOrder.save();
-
+        
         // Send response with payment link
         return res.status(201).json({
             success: true,
@@ -323,9 +331,7 @@ exports.getOrderById = async (req, res) => {
 
 exports.getOrdersByUserId = async (req, res) => {
     try {
-        const { userId } = req.params; // Extract userId from the request parameters
-
-        // Find all orders for the given userId
+        const userId = req.user._id; 
         const orders = await Order.find({ user: userId }) // Assuming the `user` field in the Order schema refers to the userId
             .populate('user', 'name email') // Populate user details (name and email)
             .populate('products.productId', 'productName price'); // Populate product details (name and price)
