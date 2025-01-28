@@ -125,22 +125,25 @@ exports.clearCart = async (req, res) => {
 
 exports.getCart = async (req, res) => {
   try {
-    const userId = req.user._id; 
+    const userId = req.user._id;
 
     const cart = await Cart.findOne({ user: userId });
 
     if (!cart || cart.items.length === 0) {
-      return res.status(404).json({ success: false, message: 'Cart is empty' });
+      return res.status(200).json({ 
+        success: true, 
+        products: [], 
+        message: 'Cart is empty' 
+      });
     }
 
-  
     const cartedProducts = await Promise.all(
       cart.items.map(async (item) => {
         const product = await Product.findById(item.product);
         if (product) {
           return {
             productId: product._id,
-            cartId:item._id,
+            cartId: item._id,
             quantity: item.quantity,
             name: product.productName,
             price: product.currentPrice,
@@ -148,10 +151,9 @@ exports.getCart = async (req, res) => {
             image: product.photographs?.[0] || null,
           };
         }
-        return null; 
+        return null;
       })
     );
-
 
     const validCartedProducts = cartedProducts.filter((item) => item !== null);
     const totalQuantity = validCartedProducts.reduce((acc, item) => acc + item.quantity, 0);
@@ -160,12 +162,15 @@ exports.getCart = async (req, res) => {
     res.status(200).json({
       success: true,
       products: validCartedProducts,
+      totalQuantity,
+      totalPrice,
     });
   } catch (error) {
     console.error('Error in getCart:', error.message);
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
+
 
   
 
