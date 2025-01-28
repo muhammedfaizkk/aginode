@@ -19,8 +19,6 @@ router.route('/api/getAllorders/:orderId').get(getOrderById)
 router.route('/api/getOrdersByUserId/:userId').get(protectRoute,getOrdersByUserId)
 router.route('/api/updateorder/:orderId').put(updateOrderStatus)
 router.route('/api/verifyPayment').post(verifyPayment);
-
-
 router.route('/api/deleteOrderAdmin/:orderId').delete(deleteOrderAdmin);
 router.route('/api/deleteOrderUser/:orderId').delete(protectRoute,deleteOrderUser);
 router.route('/api/deleteallorders').delete(deleteAllOrders);

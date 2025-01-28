@@ -107,3 +107,38 @@ exports.signin = async (req, res, next) => {
 };
 
 
+exports.getAllUsers = async (req, res) => {
+    try {
+      const users = await Users.find();
+      res.status(200).json({ success: true, users });
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  };
+  
+  // Delete All Users
+  exports.deleteAllUsers = async (req, res) => {
+    try {
+      await Users.deleteMany();
+      res.status(200).json({ success: true, message: "All users deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting users:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  };
+  
+  // Delete a Specific User
+  exports.deleteUser = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const user = await Users.findByIdAndDelete(id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.status(200).json({ success: true, message: "User deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  };
