@@ -3,7 +3,6 @@ const Product = require('../models/ProudctModel');
 const User = require('../models/usersmodel');  // Assuming the user model is named 'UserModel'
 const { v4: uuidv4 } = require('uuid');
 const nodemailer = require('nodemailer');
-const mongoose = require('mongoose');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
 require('dotenv').config();
@@ -280,6 +279,7 @@ exports.getAllOrders = async (req, res) => {
         const page = parseInt(req.query.page) || 1; // Default page is 1
         const limit = parseInt(req.query.limit) || 20; // Default limit is 20
 
+        // Calculate the skip value
         const skip = (page - 1) * limit;
 
         // Fetch orders with pagination
@@ -331,50 +331,23 @@ exports.getOrderById = async (req, res) => {
 
 exports.getOrdersByUserId = async (req, res) => {
     try {
-        // Extract userId from URL params
-        const userId = req.params.userId; 
+        const userId = req.userId; 
+        const orders = await Order.find({ user: userId }) 
+            .populate('user', 'name email') 
+            .populate('products.productId', 'productName price'); 
 
-        // Validate userId format
-        if (!mongoose.Types.ObjectId.isValid(userId)) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid user ID format. Please provide a valid ObjectId.",
-            });
-        }
-
-        // Convert to ObjectId
-        const userObjectId = mongoose.Types.ObjectId(userId);
-
-        // Fetch orders for the user
-        const orders = await Order.find({ user: userObjectId })
-            .populate('user', 'name email') // Populate user details
-            .populate('products.productId', 'productName price'); // Populate product details
-
-        // Handle case when no orders are found
         if (!orders || orders.length === 0) {
-            console.warn(`No orders found for user ID: ${userId}`);
-            return res.status(404).json({
-                success: false,
-                message: "No orders found for this user.",
-            });
+            return res.status(404).json({ message: "No orders found for this user" });
         }
 
-        // Send successful response
         res.status(200).json({
             success: true,
-            message: "Orders fetched successfully",
-            data: orders,
+            orders, // Return the list of orders
         });
     } catch (error) {
-        // Handle unexpected errors gracefully
-        console.error("Error fetching orders:", error); // Log for debugging
-        res.status(500).json({
-            success: false,
-            message: "An unexpected error occurred. Please try again later.",
-        });
+        res.status(500).json({ message: error.message });
     }
 };
-
 
 
 
