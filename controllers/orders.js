@@ -334,8 +334,11 @@ exports.getOrdersByUserId = async (req, res) => {
         // Extract userId from URL params
         const userId = req.params.userId; 
 
-        // Fetch orders based on the user ID
-        const orders = await Order.find({ user: userId }) 
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            return res.status(400).json({ message: "Invalid user ID" });
+        }
+        const userObjectId = mongoose.Types.ObjectId(userId);
+        const orders = await Order.find({ user: userObjectId }) 
             .populate('user', 'name email') // Populate user details like name and email
             .populate('products.productId', 'productName price'); // Populate product details like name and price
 
