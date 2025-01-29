@@ -8,14 +8,14 @@ const orderSchema = new mongoose.Schema(
             unique: true,
         },
         user: {
-            type: String,
+            type: mongoose.Schema.Types.ObjectId,
             ref: "User",
             required: false,
         },
         products: [
             {
                 productId: {
-                    type:String,
+                    type:mongoose.Schema.Types.ObjectId,
                     ref: "Product", 
                     required: true,
                 },

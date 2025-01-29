@@ -66,7 +66,7 @@ exports.createOrder = async (req, res) => {
             return res.status(400).json({ message: 'Products are required' });
         }
 
-       
+
         const normalizedProducts = [];
         for (let i = 0; i < products.length; i++) {
             const product = products[i];
@@ -149,18 +149,18 @@ exports.createOrder = async (req, res) => {
             address,
             paymentStatus: 'Pending',
         };
-        
+
         // Add the user to the order only if it exists
         if (user) {
             newOrderData.user = user;
         }
-        
+
         // Create the new order
         const newOrder = new Order(newOrderData);
-        
+
         // Save the order
         await newOrder.save();
-        
+
         // Send response with payment link
         return res.status(201).json({
             success: true,
@@ -331,32 +331,36 @@ exports.getOrderById = async (req, res) => {
 
 exports.getOrdersByUserId = async (req, res) => {
     try {
-        const userId = req.user._id;
-        const orders = await Order.find({ user: userId }) 
-            .populate('user', 'name email') 
-            .populate('products.productId', 'productName price'); 
-
-        if (!orders || orders.length === 0) {
-            return res.status(404).json({ message: "No orders found for this user" });
-        }
-
-        res.status(200).json({
-            success: true,
-            orders, 
-        });
+      let userId = req.user._id;
+  
+      // Convert `userId` to an ObjectId if it's a string
+      if (typeof userId === "string") {
+        userId = new mongoose.Types.ObjectId(userId);
+      }
+  
+      const orders = await Order.find({ user: userId })
+        .populate("user", "name email")
+        .populate("products.productId", "productName price");
+  
+      if (!orders || orders.length === 0) {
+        return res.status(404).json({ message: "No orders found for this user" });
+      }
+  
+      res.status(200).json({
+        success: true,
+        orders,
+      });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+      console.error("Error fetching orders:", error);
+      res.status(500).json({ message: error.message });
     }
-};
+  };
 
 
 
 exports.deleteOrderAdmin = async (req, res) => {
     try {
-        // Check if the user is an admin (ensure req.user has the role or authorization
         const { orderId } = req.params;
-
-        // Find and delete the order by its orderId
         const order = await Order.findOneAndDelete({ orderId });
 
         if (!order) {
