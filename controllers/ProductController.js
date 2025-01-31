@@ -33,13 +33,22 @@ exports.addProduct = async (req, res) => {
 
 exports.getAllProducts = async (req, res) => {
     try {
-        const { page = 1, limit = 10, subcategory } = req.query;
+        const { page = 1, limit = 10, subcategory, search } = req.query;
         const pageNumber = parseInt(page);
         const limitNumber = parseInt(limit);
         const skip = (pageNumber - 1) * limitNumber;
 
-        const filter = subcategory ? { subcategory: subcategory } : {};
+        // Build the filter object for subcategory and search
+        const filter = {};
+        if (subcategory) {
+            filter.subcategory = subcategory;
+        }
+        if (search) {
+            // Perform case-insensitive search on product name (you can modify the fields as per your requirements)
+            filter.productName = { $regex: search, $options: 'i' };
+        }
 
+        // Find products based on the filter and pagination
         const products = await Product.find(filter).skip(skip).limit(limitNumber);
         const totalProducts = await Product.countDocuments(filter); 
         const pagination = {
@@ -62,6 +71,7 @@ exports.getAllProducts = async (req, res) => {
         });
     }
 };
+
 
 
 

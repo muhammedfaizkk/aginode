@@ -26,12 +26,20 @@ const orderSchema = new mongoose.Schema(
                 },
             },
         ],
+        vichleNumber:{
+            type: String,
+            required: true,
+        },
+        vichleModel:{
+            type: String,
+            required: true,
+        },
         totalAmount: {
             type: Number,
             required: true,
         },
         paymentId: {
-            type: String,  // Store Razorpay payment ID (optional)
+            type: String, 
             required: false,
         },
         paymentStatus: {

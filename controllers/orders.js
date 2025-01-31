@@ -59,7 +59,7 @@ exports.createOrder = async (req, res) => {
             key_secret: process.env.RAZORPAY_KEY_SECRET,
         });
 
-        const { user, products, totalAmount, address } = req.body;
+        const { user, products, totalAmount, address , vichleNumber , vichleModel} = req.body;
 
         // Validate products structure
         if (!Array.isArray(products) || products.length === 0) {
@@ -147,6 +147,8 @@ exports.createOrder = async (req, res) => {
             products: mappedProducts,
             totalAmount,
             address,
+            vichleNumber,
+            vichleModel,
             paymentStatus: 'Pending',
         };
 
