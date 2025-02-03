@@ -34,23 +34,35 @@ exports.addProduct = async (req, res) => {
 exports.getAllProducts = async (req, res) => {
     try {
         const { page = 1, limit = 10, subcategory, search } = req.query;
-        const pageNumber = parseInt(page);
-        const limitNumber = parseInt(limit);
+
+        // Validate page and limit to ensure they are valid integers
+        const pageNumber = parseInt(page) > 0 ? parseInt(page) : 1;
+        const limitNumber = parseInt(limit) > 0 ? parseInt(limit) : 10;
+
         const skip = (pageNumber - 1) * limitNumber;
 
-        // Build the filter object for subcategory and search
+        // Initialize the filter object
         const filter = {};
+
+        console.log(subcategory,'<----:subcategory');
+        
         if (subcategory) {
             filter.subcategory = subcategory;
         }
+
+        // Add search filter if provided
         if (search) {
-            // Perform case-insensitive search on product name (you can modify the fields as per your requirements)
-            filter.productName = { $regex: search, $options: 'i' };
+            filter.productName = { $regex: search, $options: 'i' }; // Case-insensitive search
         }
 
-        // Find products based on the filter and pagination
+        // Debug log to check the filter and pagination
+        console.log('Filter:', filter);
+
+        // Fetch products based on filter, skipping and limiting for pagination
         const products = await Product.find(filter).skip(skip).limit(limitNumber);
         const totalProducts = await Product.countDocuments(filter); 
+
+        // Calculate pagination details
         const pagination = {
             totalProducts,
             currentPage: pageNumber,
@@ -59,18 +71,28 @@ exports.getAllProducts = async (req, res) => {
             hasPreviousPage: pageNumber > 1,
         };
 
+        // Debug log to check the pagination details
+        console.log('Pagination:', pagination);
+
+        // Respond with the products and pagination data
         res.status(200).json({
             success: true,
             pagination,
             products,
         });
+
     } catch (error) {
+        // Log the error for debugging purposes
+        console.error('Error fetching products:', error);
+
+        // Respond with an error message
         res.status(500).json({
             success: false,
             message: error.message,
         });
     }
 };
+
 
 
 
