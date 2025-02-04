@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const Users = require('../models/usersmodel');
+const mongoose = require('mongoose');
 
 const protectRoute = async (req, res, next) => {
     try {
@@ -10,14 +11,14 @@ const protectRoute = async (req, res, next) => {
             return res.status(401).json({ message: 'No token provided, authorization denied' });
         }
 
-        // Verify the token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+        // Verify token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-        if (!decoded || !decoded.id) {
+        if (!decoded || !decoded.id || !mongoose.Types.ObjectId.isValid(decoded.id)) {
             return res.status(401).json({ message: 'Invalid token payload' });
         }
 
-        // Fetch user from database
+        // Fetch user from DB
         const user = await Users.findById(decoded.id).select('-password');
         if (!user) {
             return res.status(403).json({ message: 'User not found, access forbidden' });
@@ -26,7 +27,7 @@ const protectRoute = async (req, res, next) => {
         req.user = user;
         next();
     } catch (error) {
-        console.error('Token verification error:', error);
+        console.error('Token verification error:', error.name);
 
         if (error.name === 'TokenExpiredError') {
             return res.status(401).json({
@@ -35,7 +36,7 @@ const protectRoute = async (req, res, next) => {
             });
         }
 
-        return res.status(401).json({ message: 'Invalid token, authorization denied', error: error.message });
+        return res.status(401).json({ message: 'Invalid token, authorization denied' });
     }
 };
 
