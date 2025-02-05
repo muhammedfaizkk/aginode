@@ -12,7 +12,7 @@ const protectRoute = async (req, res, next) => {
         }
 
         // Verify token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
 
         if (!decoded || !decoded.id || !mongoose.Types.ObjectId.isValid(decoded.id)) {
             return res.status(401).json({ message: 'Invalid token payload' });
