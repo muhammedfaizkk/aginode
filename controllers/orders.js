@@ -284,8 +284,9 @@ exports.getAllOrders = async (req, res) => {
         // Calculate the skip value
         const skip = (page - 1) * limit;
 
-        // Fetch orders with pagination
+        // Fetch orders with populated product details
         const orders = await Order.find()
+            .populate("products.productId") // Populate product details
             .skip(skip)
             .limit(limit);
 
@@ -309,7 +310,6 @@ exports.getAllOrders = async (req, res) => {
         });
     }
 };
-
 exports.getOrderById = async (req, res) => {
     try {
         const { orderId } = req.params;
