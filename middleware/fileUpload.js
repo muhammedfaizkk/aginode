@@ -1,23 +1,17 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-
+const sharp = require('sharp');
 
 const uploadsPath = path.resolve(__dirname, '../uploads');
 
+// Ensure the uploads directory exists
 if (!fs.existsSync(uploadsPath)) {
     fs.mkdirSync(uploadsPath, { recursive: true });
 }
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, uploadsPath);
-    },
-    filename: (req, file, cb) => {
-        const fileName = Date.now() + '-' + file.originalname;
-        cb(null, fileName);
-    },
-});
+// Use memory storage instead of disk storage
+const storage = multer.memoryStorage();
 
 const upload = multer({
     storage,
@@ -34,5 +28,25 @@ const upload = multer({
     },
 });
 
+// Middleware to process and save the image
+const processAndSaveImage = async (req, res, next) => {
+    if (!req.file) {
+        return next(new Error('No file uploaded.'));
+    }
 
-module.exports = upload;
+    try {
+        const fileName = Date.now() + '-' + path.parse(req.file.originalname).name + '.webp';
+        const filePath = path.join(uploadsPath, fileName);
+
+        await sharp(req.file.buffer)
+            .webp({ quality: 80 })
+            .toFile(filePath);
+
+        req.file.filename = fileName; // Save the new filename in the request
+        next();
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports = { upload, processAndSaveImage };
