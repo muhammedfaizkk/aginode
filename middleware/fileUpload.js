@@ -1,7 +1,6 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const sharp = require('sharp');
 
 const uploadsPath = path.resolve(__dirname, '../uploads');
 
@@ -13,19 +12,9 @@ const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, uploadsPath);
     },
-    filename: async (req, file, cb) => {
-        const fileName = Date.now() + '-' + file.originalname.split('.')[0] + '.webp'; // Convert to webp format
-        const filePath = path.join(uploadsPath, fileName);
-
-        // Convert and save the file as .webp
-        sharp(file.buffer)
-            .webp()
-            .toFile(filePath, (err, info) => {
-                if (err) {
-                    return cb(err);
-                }
-                cb(null, fileName); // Pass the new filename
-            });
+    filename: (req, file, cb) => {
+        const fileName = Date.now() + '-' + file.originalname;
+        cb(null, fileName);
     },
 });
 
