@@ -2,6 +2,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
+
 const uploadsPath = path.resolve(__dirname, '../uploads');
 
 if (!fs.existsSync(uploadsPath)) {
@@ -32,5 +33,6 @@ const upload = multer({
         cb(new Error('Invalid file type. Only jpeg, jpg, png, gif, and webp are allowed.'));
     },
 });
+
 
 module.exports = upload;
