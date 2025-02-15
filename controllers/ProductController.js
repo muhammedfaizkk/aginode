@@ -6,7 +6,7 @@ exports.addProduct = async (req, res) => {
     const { productName, originalPrice, currentPrice, specifications, category,subcategory } = req.body;
 
     try {
-        const photographs = req.files.map(file => `/uploads/${file.filename}`);
+        const photographs = req.body.photographs && req.body.photographs.length > 0 ? req.body.photographs : [];
 
         const product = await Product.create({
             productName,

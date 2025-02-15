@@ -32,31 +32,37 @@ const upload = multer({
 // Middleware to process images (convert to WebP)
 const processImages = async (req, res, next) => {
     if (!req.files || req.files.length === 0) {
-        return next(new Error('No files uploaded'));
+        return next(); // Proceed without error if no files uploaded
     }
 
     try {
-        req.processedFiles = await Promise.all(
+        req.body.photographs = await Promise.all(
             req.files.map(async (file) => {
-                // Generate unique filename
-                const fileName = `${Date.now()}-${file.originalname.replace(/\s+/g, '_')}.webp`;
-                const filePath = `/uploads/${fileName}`;  // Save relative path
+                if (!file.originalname) {
+                    console.error("File name is undefined:", file);
+                    return null; // Prevent storing "undefined" paths
+                }
+
+                const fileName = `${Date.now()}-${file.originalname.replace(/\s+/g, "_")}.webp`;
+                const filePath = `/uploads/${fileName}`;
 
                 await sharp(file.buffer)
                     .webp({ quality: 80 })
                     .toFile(path.join(uploadsPath, fileName));
 
-                return filePath;  // Save only relative path
+                return filePath; // Save the correct path
             })
         );
 
-        req.body.photographs = req.processedFiles;
+     
+        req.body.photographs = req.body.photographs.filter(Boolean);
 
         next();
     } catch (error) {
         next(error);
     }
 };
+
 
 
 module.exports = {
