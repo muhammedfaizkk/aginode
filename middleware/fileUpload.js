@@ -60,6 +60,6 @@ const processImages = async (req, res, next) => {
 
 
 module.exports = {
-    upload: multer({ storage }), 
+    upload, 
     processImages
 };
