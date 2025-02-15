@@ -38,16 +38,19 @@ const processImages = async (req, res, next) => {
     try {
         req.processedFiles = await Promise.all(
             req.files.map(async (file) => {
-                const fileName = `${Date.now()}-${path.parse(file.originalname).name}.webp`;
-                const filePath = path.join(uploadsPath, fileName);
+                // Generate unique filename
+                const fileName = `${Date.now()}-${file.originalname.replace(/\s+/g, '_')}.webp`;
+                const filePath = `/uploads/${fileName}`;  // Save relative path
 
                 await sharp(file.buffer)
-                    .webp({ quality: 80 }) 
-                    .toFile(filePath);
+                    .webp({ quality: 80 })
+                    .toFile(path.join(uploadsPath, fileName));
 
-                return { filename: fileName, path: filePath };
+                return filePath;  // Save only relative path
             })
         );
+
+        req.body.photographs = req.processedFiles;
 
         next();
     } catch (error) {
@@ -55,7 +58,7 @@ const processImages = async (req, res, next) => {
     }
 };
 
-// ✅ Ensure correct export
+
 module.exports = {
     upload: multer({ storage }), 
     processImages
