@@ -4,10 +4,6 @@ const path = require('path');
 
 exports.addProduct = async (req, res) => {
     const { productName, originalPrice, currentPrice, specifications, category, subcategory } = req.body;
-
-   
-    
-
     try {
         if (!req.files || req.files.length === 0) {
             return res.status(400).json({
