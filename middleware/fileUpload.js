@@ -32,7 +32,7 @@ const upload = multer({
 // Middleware to process images (convert to WebP)
 const processImages = async (req, res, next) => {
     if (!req.files || req.files.length === 0) {
-        return next(); // Proceed without error if no files uploaded
+        return next(); // No files uploaded, proceed
     }
 
     try {
@@ -43,18 +43,20 @@ const processImages = async (req, res, next) => {
                     return null; // Prevent storing "undefined" paths
                 }
 
-                const fileName = `${Date.now()}-${file.originalname.replace(/\s+/g, "_")}.webp`;
+                // ✅ Extract filename without extension
+                const fileBaseName = path.basename(file.originalname, path.extname(file.originalname));
+                const fileName = `${Date.now()}-${fileBaseName}.webp`;
                 const filePath = `/uploads/${fileName}`;
 
                 await sharp(file.buffer)
                     .webp({ quality: 80 })
                     .toFile(path.join(uploadsPath, fileName));
 
-                return filePath; // Save the correct path
+                return filePath; // Save the correct WebP path
             })
         );
 
-     
+        // Filter out null values
         req.body.photographs = req.body.photographs.filter(Boolean);
 
         next();
@@ -62,6 +64,7 @@ const processImages = async (req, res, next) => {
         next(error);
     }
 };
+
 
 
 
