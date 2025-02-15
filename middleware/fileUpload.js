@@ -1,7 +1,6 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const sharp = require('sharp');
 
 const uploadsPath = path.resolve(__dirname, '../uploads');
 
@@ -10,10 +9,19 @@ if (!fs.existsSync(uploadsPath)) {
     fs.mkdirSync(uploadsPath, { recursive: true });
 }
 
-// Multer memory storage (since we process images before saving)
-const storage = multer.memoryStorage();
+// Multer storage configuration to save files directly to disk
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, uploadsPath); // Save images in the uploads directory
+    },
+    filename: (req, file, cb) => {
+        const fileBaseName = path.basename(file.originalname, path.extname(file.originalname));
+        const fileName = `${Date.now()}-${fileBaseName}${path.extname(file.originalname)}`;
+        cb(null, fileName);
+    }
+});
 
-// Correctly initialize multer instance
+// Initialize multer instance
 const upload = multer({ 
     storage, 
     limits: { fileSize: 3 * 1024 * 1024 }, // 3MB limit 
@@ -29,44 +37,19 @@ const upload = multer({
     }
 });
 
-// Middleware to process images (convert to WebP)
-const processImages = async (req, res, next) => {
+// Middleware to process images (store file paths in req.body)
+const processImages = (req, res, next) => {
     if (!req.files || req.files.length === 0) {
         return next(); // No files uploaded, proceed
     }
 
     try {
-        req.body.photographs = await Promise.all(
-            req.files.map(async (file) => {
-                if (!file.originalname) {
-                    console.error("File name is undefined:", file);
-                    return null; // Prevent storing "undefined" paths
-                }
-
-                // ✅ Extract filename without extension
-                const fileBaseName = path.basename(file.originalname, path.extname(file.originalname));
-                const fileName = `${Date.now()}-${fileBaseName}.webp`;
-                const filePath = `/uploads/${fileName}`;
-
-                await sharp(file.buffer)
-                    .webp({ quality: 80 })
-                    .toFile(path.join(uploadsPath, fileName));
-
-                return filePath; // Save the correct WebP path
-            })
-        );
-
-        // Filter out null values
-        req.body.photographs = req.body.photographs.filter(Boolean);
-
+        req.body.photographs = req.files.map(file => `/uploads/${file.filename}`);
         next();
     } catch (error) {
         next(error);
     }
 };
-
-
-
 
 module.exports = {
     upload, 
