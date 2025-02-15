@@ -53,7 +53,7 @@ exports.signin = async (req, res, next) => {
         if (!email || !password) {
             return res.status(400).json({ message: "Email and password are required" });
         }
-        const user = await Users.findOne({ email: email.toLowerCase() });
+        const user = await Users.findOne({ email});
         if (!user) {
             return res.status(401).json({ message: "Invalid email or password" });
         }
@@ -70,7 +70,7 @@ exports.signin = async (req, res, next) => {
             return res.status(500).json({ message: "Internal server configuration error" });
         }
 
-        // Generate a JWT token
+       
         const token = jwt.sign(
             {
                 id: user._id,
@@ -81,7 +81,7 @@ exports.signin = async (req, res, next) => {
             { expiresIn: tokenExpiry }
         );
 
-        // Set token as an HttpOnly cookie
+    
         res.cookie("token", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production", // Use HTTPS in production

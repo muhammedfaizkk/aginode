@@ -1,5 +1,5 @@
 const express = require('express');
-const upload = require('../middleware/fileUpload')
+const { upload, processImages } = require('../middleware/fileUpload');
 const {
   createBanner,
   getBanners,
@@ -9,9 +9,9 @@ const {
 
 const router = express.Router();
 
-router.route('/api/banners').post(upload.array('images',6), createBanner);
+router.post('/api/banners', upload.array('photographs', 6), processImages, createBanner);
 router.route('/api/banners').get(getBanners);
-router.route('/api/banners/:bannerId').put(upload.array('images', 6), updateBanner);
+router.route('/api/banners/:bannerId').put(upload.array('images', 6),processImages, updateBanner);
 router.route('/api/banners/:bannerId').delete(deleteBanner);
 
 module.exports = router;

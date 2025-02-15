@@ -5,43 +5,58 @@ const sharp = require('sharp');
 
 const uploadsPath = path.resolve(__dirname, '../uploads');
 
+// Ensure uploads directory exists
 if (!fs.existsSync(uploadsPath)) {
     fs.mkdirSync(uploadsPath, { recursive: true });
 }
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, uploadsPath);
-    },
-    filename: async (req, file, cb) => {
-        const fileName = Date.now() + '-' + file.originalname.split('.')[0] + '.webp'; // Convert to webp format
-        const filePath = path.join(uploadsPath, fileName);
+// Multer memory storage (since we process images before saving)
+const storage = multer.memoryStorage();
 
-        // Convert and save the file as .webp
-        sharp(file.buffer)
-            .webp()
-            .toFile(filePath, (err, info) => {
-                if (err) {
-                    return cb(err);
-                }
-                cb(null, fileName); // Pass the new filename
-            });
-    },
-});
-
-const upload = multer({
-    storage,
-    limits: { fileSize: 3 * 1024 * 1024 }, // 3MB limit
+// Correctly initialize multer instance
+const upload = multer({ 
+    storage, 
+    limits: { fileSize: 3 * 1024 * 1024 }, // 3MB limit 
     fileFilter: (req, file, cb) => {
         const filetypes = /jpeg|jpg|png|gif|webp/;
         const mimeType = filetypes.test(file.mimetype);
-        const extname = filetypes.test(file.originalname.toLowerCase());
+        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
 
         if (mimeType && extname) {
             return cb(null, true);
         }
-        cb(new Error('Invalid file type. Only jpeg, jpg, png, gif, and webp are allowed.'));
-    },
+        cb(new Error('Invalid file type. Only JPEG, JPG, PNG, GIF, and WEBP are allowed.'));
+    }
 });
 
-module.exports = upload;
+// Middleware to process images (convert to WebP)
+const processImages = async (req, res, next) => {
+    if (!req.files || req.files.length === 0) {
+        return next(new Error('No files uploaded'));
+    }
+
+    try {
+        req.processedFiles = await Promise.all(
+            req.files.map(async (file) => {
+                const fileName = `${Date.now()}-${path.parse(file.originalname).name}.webp`;
+                const filePath = path.join(uploadsPath, fileName);
+
+                await sharp(file.buffer)
+                    .webp({ quality: 80 }) 
+                    .toFile(filePath);
+
+                return { filename: fileName, path: filePath };
+            })
+        );
+
+        next();
+    } catch (error) {
+        next(error);
+    }
+};
+
+// ✅ Ensure correct export
+module.exports = {
+    upload: multer({ storage }), 
+    processImages
+};
