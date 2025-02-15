@@ -5,6 +5,9 @@ const path = require('path');
 exports.addProduct = async (req, res) => {
     const { productName, originalPrice, currentPrice, specifications, category, subcategory } = req.body;
 
+   
+    
+
     try {
         if (!req.files || req.files.length === 0) {
             return res.status(400).json({
@@ -14,7 +17,7 @@ exports.addProduct = async (req, res) => {
         }
 
         const photographs = req.files.map(file => `/uploads/${file.filename}`);
-
+        console.log(photographs);
         const product = await Product.create({
             productName,
             originalPrice,
@@ -47,11 +50,8 @@ exports.getAllProducts = async (req, res) => {
         const limitNumber = parseInt(limit) > 0 ? parseInt(limit) : 10;
 
         const skip = (pageNumber - 1) * limitNumber;
-
-        // Initialize the filter object
         const filter = {};
 
-        console.log(subcategory,'<----:subcategory');
         
         if (subcategory) {
             filter.subcategory = subcategory;
