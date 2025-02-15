@@ -58,8 +58,7 @@ exports.getAllProducts = async (req, res) => {
             filter.productName = { $regex: search, $options: 'i' }; // Case-insensitive search
         }
 
-        // Debug log to check the filter and pagination
-        console.log('Filter:', filter);
+        
 
         // Fetch products based on filter, skipping and limiting for pagination
         const products = await Product.find(filter).skip(skip).limit(limitNumber);
@@ -74,8 +73,6 @@ exports.getAllProducts = async (req, res) => {
             hasPreviousPage: pageNumber > 1,
         };
 
-        // Debug log to check the pagination details
-        console.log('Pagination:', pagination);
 
         // Respond with the products and pagination data
         res.status(200).json({
