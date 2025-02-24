@@ -6,11 +6,12 @@ const {
     getCategories,
     deleteCategory,
 } = require('../controllers/categoryController');
+const adminProtectRoute = require('../middleware/adminAuth')
 
 const router = express.Router();
-router.post('/api/addCategory', addCategory);
-router.post('/api/subcategories/:categoryId', addSubcategory);
+router.post('/api/addCategory', adminProtectRoute,addCategory);
+router.post('/api/subcategories/:categoryId',adminProtectRoute, addSubcategory);
 router.get('/api/getCategories', getCategories);
-router.delete('/api/deleteCategory/:id', deleteCategory);
+router.delete('/api/deleteCategory/:id',adminProtectRoute,deleteCategory);
 
 module.exports = router;
