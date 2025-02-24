@@ -26,11 +26,11 @@ const orderSchema = new mongoose.Schema(
         },
         vehicleModel: {
           type: String,
-          required: false, // Adjust as needed
+          required: false, 
         },
         vehicleNumber: {
           type: String,
-          required: false, // Adjust as needed
+          required: false,
         },
       },
     ],
@@ -42,7 +42,7 @@ const orderSchema = new mongoose.Schema(
       type: String,
       required: function () {
         return this.paymentStatus === "Completed";
-      }, // Required only if payment is completed
+      }, 
     },
     paymentStatus: {
       type: String,

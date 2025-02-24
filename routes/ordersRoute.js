@@ -13,7 +13,7 @@ const {
 } = require('../controllers/orders');
 const protectRoute = require('../middleware/userAuth');
 
-router.route('/api/createorder').post(createOrder)
+router.route('/api/createorder').post(protectRoute,createOrder)
 router.route('/api/getAllorders').get(getAllOrders)
 router.route('/api/getAllorders/:orderId').get(getOrderById)
 router.route('/api/getOrdersByUserId').get(protectRoute,getOrdersByUserId)

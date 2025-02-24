@@ -2,10 +2,10 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const Admin = require("../models/adminModel");
 
-
+// Admin Signup
 exports.adminSignup = async (req, res) => {
     try {
-        const { email, password, role } = req.body;
+        const { email, password } = req.body;
 
         if (!email || !password) {
             return res.status(400).json({ message: "Please provide email and password" });
@@ -21,13 +21,13 @@ exports.adminSignup = async (req, res) => {
         const newAdmin = new Admin({
             email,
             password: hashedPassword,
-            role: role || "admin",
+            role: "admin", // Force role as "admin"
         });
 
         await newAdmin.save();
 
         const token = jwt.sign(
-            { id: newAdmin._id, email: newAdmin.email },
+            { id: newAdmin._id, email: newAdmin.email, role: "admin" }, // Include role in token
             process.env.JWT_SECRET_KEY,
             { expiresIn: "1h" }
         );
@@ -62,7 +62,7 @@ exports.adminSignin = async (req, res) => {
         }
 
         const token = jwt.sign(
-            { id: existingAdmin._id, email: existingAdmin.email },
+            { id: existingAdmin._id, email: existingAdmin.email, role: "admin" }, // Include role in token
             process.env.JWT_SECRET_KEY,
             { expiresIn: "1h" }
         );
@@ -81,12 +81,11 @@ exports.adminSignin = async (req, res) => {
 exports.updateAdmin = async (req, res) => {
     try {
         const { id } = req.params;
-        const { email, password, role } = req.body;
+        const { email, password } = req.body;
 
         const updateData = {};
         if (email) updateData.email = email;
         if (password) updateData.password = await bcrypt.hash(password, 10);
-        if (role) updateData.role = role;
 
         const updatedAdmin = await Admin.findByIdAndUpdate(id, updateData, { new: true });
 
@@ -108,12 +107,15 @@ exports.updateAdmin = async (req, res) => {
     }
 };
 
+
 exports.deleteAdmin = async (req, res) => {
     try {
         const { id } = req.params;
+        if (req.user.id === id) {
+            return res.status(403).json({ message: "You cannot delete your own account" });
+        }
 
         const deletedAdmin = await Admin.findByIdAndDelete(id);
-
         if (!deletedAdmin) {
             return res.status(404).json({ message: "Admin not found" });
         }

@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const Users = require('../models/usersmodel');
 const mongoose = require('mongoose');
 
-const protectRoute = async (req, res, next) => {
+const adminProtectRoute = async (req, res, next) => {
     try {
         const authHeader = req.headers.authorization;
         const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
@@ -11,17 +11,20 @@ const protectRoute = async (req, res, next) => {
             return res.status(401).json({ message: 'No token provided, authorization denied' });
         }
 
-        
         const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
 
         if (!decoded || !decoded.id || !mongoose.Types.ObjectId.isValid(decoded.id)) {
             return res.status(401).json({ message: 'Invalid token payload' });
         }
 
-        
         const user = await Users.findById(decoded.id).select('-password');
         if (!user) {
             return res.status(403).json({ message: 'User not found, access forbidden' });
+        }
+
+        
+        if (user.role !== 'admin') {
+            return res.status(403).json({ message: 'Access denied, admin only' });
         }
 
         req.user = user;
@@ -40,4 +43,4 @@ const protectRoute = async (req, res, next) => {
     }
 };
 
-module.exports = protectRoute;
+module.exports = adminProtectRoute;
