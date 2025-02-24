@@ -19,6 +19,14 @@ const cartSchema = new mongoose.Schema(
           required: true,
           min: [1, "Quantity must be at least 1"],
         },
+        vehicleModel: {
+          type: String,
+          required: true,
+        },
+        vehicleNumber: {
+          type: String,
+          required: true,
+        },
       },
     ],
   },
