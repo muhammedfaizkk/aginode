@@ -59,34 +59,34 @@ exports.createOrder = async (req, res) => {
             key_secret: process.env.RAZORPAY_KEY_SECRET,
         });
 
-        const { user, products, totalAmount, address , vichleNumber , vichleModel} = req.body;
+        const { user, products, totalAmount, address } = req.body;
 
         // Validate products structure
         if (!Array.isArray(products) || products.length === 0) {
             return res.status(400).json({ message: 'Products are required' });
         }
 
-
         const normalizedProducts = [];
         for (let i = 0; i < products.length; i++) {
             const product = products[i];
 
-            // Check if both productId and quantity are present
             if (!product.productId || !product.quantity) {
                 return res.status(400).json({
                     message: `Missing productId or quantity in product at index ${i}`,
                 });
             }
 
-            // Ensure quantity is a valid positive integer
             const quantity = parseInt(product.quantity, 10);
             if (isNaN(quantity) || quantity <= 0) {
                 return res.status(400).json({ message: `Invalid quantity at index ${i}` });
             }
 
+            // Ensure vehicle details are properly mapped inside each product
             normalizedProducts.push({
                 productId: product.productId,
                 quantity,
+                vehicleModel: product.vehicleModel || null, // Allow optional vehicleModel
+                vehicleNumber: product.vehicleNumber || null, // Allow optional vehicleNumber
             });
         }
 
@@ -102,13 +102,13 @@ exports.createOrder = async (req, res) => {
             return res.status(400).json({ message: 'Complete address details are required' });
         }
 
-        // Validate email format
+        // Email format validation
         const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         if (!emailRegex.test(email)) {
             return res.status(400).json({ message: 'Invalid email format' });
         }
 
-        // Validate phone number format
+        // Phone number format validation
         const phoneRegex = /^[0-9]{10}$/;
         if (!phoneRegex.test(phone)) {
             return res.status(400).json({ message: 'Invalid phone number format' });
@@ -118,7 +118,7 @@ exports.createOrder = async (req, res) => {
         let razorpayOrder;
         try {
             razorpayOrder = await razorpayInstance.orders.create({
-                amount: totalAmount * 100, // Razorpay expects amount in paise
+                amount: totalAmount * 100, // Convert to paise
                 currency: 'INR',
                 receipt: uuidv4(),
                 notes: {
@@ -136,34 +136,23 @@ exports.createOrder = async (req, res) => {
             });
         }
 
-        // Create database order entry
-        const mappedProducts = req.body.products.map(product => ({
-            productId: product.productId,
-            quantity: product.quantity,
-        }));
-
+        // Create order entry in the database
         const newOrderData = {
             orderId: razorpayOrder.id,
-            products: mappedProducts,
+            products: normalizedProducts, // Correctly mapped products array
             totalAmount,
             address,
-            vichleNumber,
-            vichleModel,
             paymentStatus: 'Pending',
         };
 
-        // Add the user to the order only if it exists
         if (user) {
             newOrderData.user = user;
         }
 
-        // Create the new order
+        // Save order in MongoDB
         const newOrder = new Order(newOrderData);
-
-        // Save the order
         await newOrder.save();
 
-        // Send response with payment link
         return res.status(201).json({
             success: true,
             message: 'Order created successfully',
@@ -179,6 +168,7 @@ exports.createOrder = async (req, res) => {
         }
     }
 };
+
 
 
 
