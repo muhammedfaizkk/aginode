@@ -414,7 +414,7 @@ exports.deleteAllOrders = async (req, res) => {
         const result = await Order.deleteMany({}); // Deletes all orders in the collection
 
         res.status(200).json({
-            success: true, e
+            success: true, 
             message: `${result.deletedCount} orders deleted successfully`,
         });
     } catch (error) {
