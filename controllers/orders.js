@@ -61,7 +61,8 @@ exports.createOrder = async (req, res) => {
 
         const { user, products, totalAmount, address } = req.body;
 
-        // Validate products structure
+       console.log('user-------->',user);
+       
         if (!Array.isArray(products) || products.length === 0) {
             return res.status(400).json({ message: 'Products are required' });
         }
