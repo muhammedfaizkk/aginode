@@ -1,6 +1,5 @@
-const Order = require('../models/ordersmodel');
-const Product = require('../models/ProudctModel');
-const User = require('../models/usersmodel');  // Assuming the user model is named 'UserModel'
+const Order = require('../models/ordersmodel'); 
+const Cart = require("../models/cartmodel");
 const { v4: uuidv4 } = require('uuid');
 const nodemailer = require('nodemailer');
 const Razorpay = require('razorpay');
@@ -61,8 +60,9 @@ exports.createOrder = async (req, res) => {
 
         const { user, products, totalAmount, address } = req.body;
 
-       console.log('user-------->',user);
-       
+        console.log('user-------->', user);
+
+        // Validate products
         if (!Array.isArray(products) || products.length === 0) {
             return res.status(400).json({ message: 'Products are required' });
         }
@@ -82,12 +82,11 @@ exports.createOrder = async (req, res) => {
                 return res.status(400).json({ message: `Invalid quantity at index ${i}` });
             }
 
-            // Ensure vehicle details are properly mapped inside each product
             normalizedProducts.push({
                 productId: product.productId,
                 quantity,
-                vehicleModel: product.vehicleModel || null, // Allow optional vehicleModel
-                vehicleNumber: product.vehicleNumber || null, // Allow optional vehicleNumber
+                vehicleModel: product.vehicleModel || null,
+                vehicleNumber: product.vehicleNumber || null,
             });
         }
 
@@ -103,13 +102,13 @@ exports.createOrder = async (req, res) => {
             return res.status(400).json({ message: 'Complete address details are required' });
         }
 
-        // Email format validation
+        // Email validation
         const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         if (!emailRegex.test(email)) {
             return res.status(400).json({ message: 'Invalid email format' });
         }
 
-        // Phone number format validation
+        // Phone validation
         const phoneRegex = /^[0-9]{10}$/;
         if (!phoneRegex.test(phone)) {
             return res.status(400).json({ message: 'Invalid phone number format' });
@@ -140,7 +139,7 @@ exports.createOrder = async (req, res) => {
         // Create order entry in the database
         const newOrderData = {
             orderId: razorpayOrder.id,
-            products: normalizedProducts, // Correctly mapped products array
+            products: normalizedProducts,
             totalAmount,
             address,
             paymentStatus: 'Pending',
@@ -153,6 +152,16 @@ exports.createOrder = async (req, res) => {
         // Save order in MongoDB
         const newOrder = new Order(newOrderData);
         await newOrder.save();
+
+        // Clear user's cart after order is placed
+        try {
+            if (user) {
+                await Cart.deleteOne({ user }); // Assuming cart is stored per user
+                console.log(`Cart cleared for user: ${user}`);
+            }
+        } catch (cartError) {
+            console.error('Error clearing cart:', cartError);
+        }
 
         return res.status(201).json({
             success: true,
@@ -169,7 +178,6 @@ exports.createOrder = async (req, res) => {
         }
     }
 };
-
 
 
 
