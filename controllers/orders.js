@@ -175,7 +175,8 @@ exports.createOrder = async (req, res) => {
 
 exports.verifyPayment = async (req, res) => {
     try {
-        const { orderId, razorpayPaymentId, razorpaySignature } = req.body; // Details sent from frontend
+        const { orderId, razorpayPaymentId, razorpaySignature } = req.body;
+        console.log('verifyPayment--------->', orderId, razorpayPaymentId, razorpaySignature);
 
         if (!orderId || !razorpayPaymentId || !razorpaySignature) {
             return res.status(400).json({ message: "Order ID, Razorpay Payment ID, and Signature are required" });
@@ -193,7 +194,6 @@ exports.verifyPayment = async (req, res) => {
             return res.status(404).json({ message: "Order not found" });
         }
 
-        // If the payment is successful, update the order payment status and paymentId
         order.paymentStatus = 'Completed';
         order.paymentId = razorpayPaymentId;
         await order.save();
@@ -213,16 +213,15 @@ exports.verifyPayment = async (req, res) => {
     }
 };
 
-// Function to verify Razorpay payment
 const verifyRazorpayPayment = (orderId, razorpayPaymentId, razorpaySignature) => {
-    const razorpaySecret = process.env.RAZORPAY_KEY_SECRET; // Your Razorpay secret key
+    const razorpaySecret = process.env.RAZORPAY_KEY_SECRET;
 
     if (!razorpaySecret) {
         console.error('Razorpay secret key is not defined');
         throw new Error('Razorpay secret key is missing');
     }
 
-    const body = `${orderId}|${razorpayPaymentId}`; // Correct body format
+    const body = `${orderId}|${razorpayPaymentId}`;
     const expectedSignature = crypto
         .createHmac('sha256', razorpaySecret)
         .update(body)
@@ -323,30 +322,30 @@ exports.getOrderById = async (req, res) => {
 
 exports.getOrdersByUserId = async (req, res) => {
     try {
-      let userId = req.user._id;
-  
-      // Convert `userId` to an ObjectId if it's a string
-      if (typeof userId === "string") {
-        userId = new mongoose.Types.ObjectId(userId);
-      }
-  
-      const orders = await Order.find({ user: userId })
-        .populate("user", "name email")
-        .populate("products.productId", "productName price");
-  
-      if (!orders || orders.length === 0) {
-        return res.status(404).json({ message: "No orders found for this user" });
-      }
-  
-      res.status(200).json({
-        success: true,
-        orders,
-      });
+        let userId = req.user._id;
+
+        // Convert `userId` to an ObjectId if it's a string
+        if (typeof userId === "string") {
+            userId = new mongoose.Types.ObjectId(userId);
+        }
+
+        const orders = await Order.find({ user: userId })
+            .populate("user", "name email")
+            .populate("products.productId", "productName price");
+
+        if (!orders || orders.length === 0) {
+            return res.status(404).json({ message: "No orders found for this user" });
+        }
+
+        res.status(200).json({
+            success: true,
+            orders,
+        });
     } catch (error) {
-      console.error("Error fetching orders:", error);
-      res.status(500).json({ message: error.message });
+        console.error("Error fetching orders:", error);
+        res.status(500).json({ message: error.message });
     }
-  };
+};
 
 
 
@@ -415,7 +414,7 @@ exports.deleteAllOrders = async (req, res) => {
         const result = await Order.deleteMany({}); // Deletes all orders in the collection
 
         res.status(200).json({
-            success: true,
+            success: true, e
             message: `${result.deletedCount} orders deleted successfully`,
         });
     } catch (error) {
