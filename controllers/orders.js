@@ -182,36 +182,46 @@ exports.verifyPayment = async (req, res) => {
             return res.status(400).json({ message: "Order ID, Razorpay Payment ID, and Signature are required" });
         }
 
-        // Verify the payment with Razorpay
+        // Verify the payment
         const isPaymentVerified = verifyRazorpayPayment(orderId, razorpayPaymentId, razorpaySignature);
+        console.log('Payment Verification Result:', isPaymentVerified);
 
         if (!isPaymentVerified) {
             return res.status(400).json({ message: "Payment verification failed" });
         }
 
-        const order = await Order.findOne({ orderId });
-        if (!order) {
+        // Find and update the order
+        const updatedOrder = await Order.findOneAndUpdate(
+            { orderId },
+            { $set: { paymentStatus: 'Completed', paymentId: razorpayPaymentId } },
+            { new: true }
+        );
+
+        if (!updatedOrder) {
             return res.status(404).json({ message: "Order not found" });
         }
 
-        order.paymentStatus = 'Completed';
-        order.paymentId = razorpayPaymentId;
-        await order.save();
+        console.log('Updated Order:', updatedOrder);
 
-        // Send an email confirmation (assuming you have an email service)
-        const userEmail = order.address.email;
-        await sendOrderConfirmationEmail(order, userEmail, 'Payment Successful');
+        // Send email confirmation
+        try {
+            const userEmail = updatedOrder.address.email;
+            await sendOrderConfirmationEmail(updatedOrder, userEmail, 'Payment Successful');
+        } catch (emailError) {
+            console.error('Error sending email:', emailError.message);
+        }
 
         res.status(200).json({
             success: true,
             message: 'Payment verified and order updated successfully',
-            order,
+            order: updatedOrder,
         });
     } catch (error) {
         console.error('Error verifying payment:', error.message, error.stack);
         res.status(500).json({ message: error.message || 'Internal server error' });
     }
 };
+
 
 const verifyRazorpayPayment = (orderId, razorpayPaymentId, razorpaySignature) => {
     const razorpaySecret = process.env.RAZORPAY_KEY_SECRET;
