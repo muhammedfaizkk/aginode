@@ -21,7 +21,7 @@ exports.adminSignup = async (req, res) => {
         const newAdmin = new Admin({
             email,
             password: hashedPassword,
-            role: "admin", // Force role as "admin"
+            role: "admin", 
         });
 
         await newAdmin.save();
@@ -42,7 +42,6 @@ exports.adminSignup = async (req, res) => {
     }
 };
 
-// Admin Signin
 exports.adminSignin = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -63,9 +62,9 @@ exports.adminSignin = async (req, res) => {
 
         const token = jwt.sign(
             { id: existingAdmin._id, email: existingAdmin.email, role: "admin" }, // Include role in token
-            process.env.JWT_SECRET_KEY,
-            { expiresIn: "1h" }
+            process.env.JWT_SECRET_KEY
         );
+        
 
         res.status(200).json({
             success: true,
@@ -77,7 +76,7 @@ exports.adminSignin = async (req, res) => {
     }
 };
 
-// Update Admin
+
 exports.updateAdmin = async (req, res) => {
     try {
         const { id } = req.params;

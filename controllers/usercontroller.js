@@ -77,10 +77,9 @@ exports.signin = async (req, res, next) => {
                 name: user.name,
                 role: user.role,
             },
-            secretKey,
-            { expiresIn: tokenExpiry }
+            secretKey
         );
-
+        
     
         res.cookie("token", token, {
             httpOnly: true,
