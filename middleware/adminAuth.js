@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const Users = require('../models/usersmodel');
+const Admin = require('../models/adminModel');
 const mongoose = require('mongoose');
 
 const adminProtectRoute = async (req, res, next) => {
@@ -17,17 +17,16 @@ const adminProtectRoute = async (req, res, next) => {
             return res.status(401).json({ message: 'Invalid token payload' });
         }
 
-        const user = await Users.findById(decoded.id).select('-password');
-        if (!user) {
-            return res.status(403).json({ message: 'User not found, access forbidden' });
+        const admin = await Admin.findById(decoded.id).select('-password');
+        if (!admin) {
+            return res.status(403).json({ message: 'Admin not found, access forbidden' });
         }
 
-        
-        if (user.role !== 'admin') {
+        if (admin.role !== 'admin') {
             return res.status(403).json({ message: 'Access denied, admin only' });
         }
 
-        req.user = user;
+        req.user = admin;
         next();
     } catch (error) {
         console.error('Token verification error:', error.name);

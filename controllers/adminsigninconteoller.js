@@ -21,13 +21,13 @@ exports.adminSignup = async (req, res) => {
         const newAdmin = new Admin({
             email,
             password: hashedPassword,
-            role: "admin", 
+            role: "admin",
         });
 
         await newAdmin.save();
 
         const token = jwt.sign(
-            { id: newAdmin._id, email: newAdmin.email, role: "admin" }, // Include role in token
+            { id: newAdmin._id, email: newAdmin.email, role: "admin" },
             process.env.JWT_SECRET_KEY,
             { expiresIn: "1h" }
         );
@@ -42,6 +42,7 @@ exports.adminSignup = async (req, res) => {
     }
 };
 
+// Admin Signin
 exports.adminSignin = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -61,10 +62,10 @@ exports.adminSignin = async (req, res) => {
         }
 
         const token = jwt.sign(
-            { id: existingAdmin._id, email: existingAdmin.email, role: "admin" }, // Include role in token
-            process.env.JWT_SECRET_KEY
+            { id: existingAdmin._id, email: existingAdmin.email, role: "admin" },
+            process.env.JWT_SECRET_KEY,
+            { expiresIn: "1h" }
         );
-        
 
         res.status(200).json({
             success: true,
@@ -76,7 +77,7 @@ exports.adminSignin = async (req, res) => {
     }
 };
 
-
+// Update Admin
 exports.updateAdmin = async (req, res) => {
     try {
         const { id } = req.params;
@@ -106,10 +107,12 @@ exports.updateAdmin = async (req, res) => {
     }
 };
 
-
+// Delete Admin
 exports.deleteAdmin = async (req, res) => {
     try {
         const { id } = req.params;
+        
+        // Prevent self-deletion
         if (req.user.id === id) {
             return res.status(403).json({ message: "You cannot delete your own account" });
         }
