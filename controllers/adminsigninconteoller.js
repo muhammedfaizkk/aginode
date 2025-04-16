@@ -42,7 +42,6 @@ exports.adminSignup = async (req, res) => {
     }
 };
 
-// Admin Signin
 exports.adminSignin = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -61,10 +60,10 @@ exports.adminSignin = async (req, res) => {
             return res.status(401).json({ message: "Invalid email or password" });
         }
 
+        // Token without expiration
         const token = jwt.sign(
             { id: existingAdmin._id, email: existingAdmin.email, role: "admin" },
-            process.env.JWT_SECRET_KEY,
-            { expiresIn: "1h" }
+            process.env.JWT_SECRET_KEY
         );
 
         res.status(200).json({
@@ -76,6 +75,7 @@ exports.adminSignin = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
 
 // Update Admin
 exports.updateAdmin = async (req, res) => {
