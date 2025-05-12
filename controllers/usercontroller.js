@@ -50,44 +50,49 @@ exports.signup = async (req, res) => {
 exports.signin = async (req, res, next) => {
     try {
         const { email, password } = req.body;
+
         if (!email || !password) {
             return res.status(400).json({ message: "Email and password are required" });
         }
-        const user = await Users.findOne({ email});
+
+        const user = await Users.findOne({ email });
         if (!user) {
             return res.status(401).json({ message: "Invalid email or password" });
         }
+
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
             return res.status(401).json({ message: "Invalid email or password" });
         }
 
         const secretKey = process.env.JWT_SECRET_KEY;
-        const tokenExpiry = process.env.JWT_EXPIRY || "1d";
+        const tokenExpiry = "180d"; // 6 months
 
         if (!secretKey) {
             console.error("JWT_SECRET_KEY is not defined in environment variables");
             return res.status(500).json({ message: "Internal server configuration error" });
         }
 
-       
         const token = jwt.sign(
             {
                 id: user._id,
                 name: user.name,
                 role: user.role,
             },
-            secretKey
+            secretKey,
+            { expiresIn: tokenExpiry }
         );
-        
-    
+
+        // 6 months in milliseconds
+        const sixMonthsInMs = 1000 * 60 * 60 * 24 * 30 * 6;
+
         res.cookie("token", token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production", // Use HTTPS in production
-            sameSite: "strict", // Prevent CSRF
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+            maxAge: sixMonthsInMs,
         });
 
-        // Send response with user info and token
         res.status(200).json({
             success: true,
             message: "Login successful",
@@ -97,7 +102,7 @@ exports.signin = async (req, res, next) => {
                 email: user.email,
                 role: user.role,
             },
-            token, // Optional: send token in the body as well
+            token,
         });
     } catch (error) {
         console.error("Error during sign-in:", error);
