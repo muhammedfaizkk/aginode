@@ -53,202 +53,220 @@ async function sendOrderConfirmationEmail(order, userEmail, paymentLink) {
 
 exports.createOrder = async (req, res) => {
     try {
-        const razorpayInstance = new Razorpay({
-            key_id: process.env.RAZORPAY_KEY_ID,
-            key_secret: process.env.RAZORPAY_KEY_SECRET,
+      const razorpayInstance = new Razorpay({
+        key_id: process.env.RAZORPAY_KEY_ID,
+        key_secret: process.env.RAZORPAY_KEY_SECRET,
+      });
+  
+      const { user, products, totalAmount, address } = req.body;
+  
+      // Validate products
+      if (!Array.isArray(products) || products.length === 0) {
+        return res.status(400).json({ message: 'Products are required' });
+      }
+  
+      const normalizedProducts = [];
+      for (let i = 0; i < products.length; i++) {
+        const product = products[i];
+  
+        if (!product.productId || !product.quantity) {
+          return res.status(400).json({
+            message: `Missing productId or quantity at index ${i}`,
+          });
+        }
+  
+        const quantity = parseInt(product.quantity, 10);
+        if (isNaN(quantity) || quantity <= 0) {
+          return res.status(400).json({
+            message: `Invalid quantity at index ${i}`,
+          });
+        }
+  
+        normalizedProducts.push({
+          productId: product.productId,
+          quantity,
+          vehicleModel: product.vehicleModel || null,
+          vehicleNumber: product.vehicleNumber || null,
         });
-
-        const { user, products, totalAmount, address } = req.body;
-
-        console.log('user-------->', user);
-
-        // Validate products
-        if (!Array.isArray(products) || products.length === 0) {
-            return res.status(400).json({ message: 'Products are required' });
-        }
-
-        const normalizedProducts = [];
-        for (let i = 0; i < products.length; i++) {
-            const product = products[i];
-
-            if (!product.productId || !product.quantity) {
-                return res.status(400).json({
-                    message: `Missing productId or quantity in product at index ${i}`,
-                });
-            }
-
-            const quantity = parseInt(product.quantity, 10);
-            if (isNaN(quantity) || quantity <= 0) {
-                return res.status(400).json({ message: `Invalid quantity at index ${i}` });
-            }
-
-            normalizedProducts.push({
-                productId: product.productId,
-                quantity,
-                vehicleModel: product.vehicleModel || null,
-                vehicleNumber: product.vehicleNumber || null,
-            });
-        }
-
-        req.body.products = normalizedProducts;
-
-        // Validate totalAmount and address
-        if (!totalAmount || !address) {
-            return res.status(400).json({ message: 'Total amount and address are required' });
-        }
-
-        const { street, city, state, postalCode, phone, email, name } = address;
-        if (!street || !city || !state || !postalCode || !phone || !email || !name) {
-            return res.status(400).json({ message: 'Complete address details are required' });
-        }
-
-        // Email validation
-        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-        if (!emailRegex.test(email)) {
-            return res.status(400).json({ message: 'Invalid email format' });
-        }
-
-        // Phone validation
-        const phoneRegex = /^[0-9]{10}$/;
-        if (!phoneRegex.test(phone)) {
-            return res.status(400).json({ message: 'Invalid phone number format' });
-        }
-
-        // Create Razorpay order
-        let razorpayOrder;
-        try {
-            razorpayOrder = await razorpayInstance.orders.create({
-                amount: totalAmount * 100, // Convert to paise
-                currency: 'INR',
-                receipt: uuidv4(),
-                notes: {
-                    description: 'Order Payment',
-                    name: address.name,
-                    email: address.email,
-                    contact: address.phone,
-                },
-            });
-        } catch (razorpayError) {
-            console.error('Razorpay API Error:', razorpayError);
-            return res.status(500).json({
-                message: 'Error creating order',
-                error: razorpayError.error?.description || 'Razorpay API Error',
-            });
-        }
-
-        // Create order entry in the database
-        const newOrderData = {
-            orderId: razorpayOrder.id,
-            products: normalizedProducts,
-            totalAmount,
-            address,
-            paymentStatus: 'Pending',
-        };
-
-        if (user) {
-            newOrderData.user = user;
-        }
-
-        // Save order in MongoDB
-        const newOrder = new Order(newOrderData);
-        await newOrder.save();
-
-        // Clear user's cart after order is placed
-        try {
-            if (user) {
-                await Cart.deleteOne({ user }); // Assuming cart is stored per user
-                console.log(`Cart cleared for user: ${user}`);
-            }
-        } catch (cartError) {
-            console.error('Error clearing cart:', cartError);
-        }
-
-        return res.status(201).json({
-            success: true,
-            message: 'Order created successfully',
-            order: newOrder,
+      }
+  
+      // Validate totalAmount and address
+      if (!totalAmount || !address) {
+        return res.status(400).json({ message: 'Total amount and address are required' });
+      }
+  
+      const { street, city, state, postalCode, phone, email, name } = address;
+  
+      if (!street || !city || !state || !postalCode || !phone || !email || !name) {
+        return res.status(400).json({ message: 'Complete address details are required' });
+      }
+  
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: 'Invalid email format' });
+      }
+  
+      const phoneRegex = /^[0-9]{10}$/;
+      if (!phoneRegex.test(phone)) {
+        return res.status(400).json({ message: 'Invalid phone number format' });
+      }
+  
+      // Create Razorpay Order
+      let razorpayOrder;
+      try {
+        razorpayOrder = await razorpayInstance.orders.create({
+          amount: totalAmount * 100, // Convert to paise
+          currency: 'INR',
+          receipt: uuidv4(),
+          notes: {
+            description: 'Order Payment',
+            name,
+            email,
+            contact: phone,
+          },
         });
+      } catch (err) {
+        console.error('Razorpay API Error:', err);
+        return res.status(500).json({ message: 'Error creating Razorpay order' });
+      }
+  
+      // Create DB Order
+      const newOrder = new Order({
+        orderId: razorpayOrder.id,
+        user: user || null,
+        products: normalizedProducts,
+        totalAmount,
+        address,
+        paymentStatus: 'Pending',
+      });
+  
+      await newOrder.save();
+  
+      // Clear cart if user exists
+      if (user) {
+        await Cart.deleteOne({ user });
+        console.log(`Cart cleared for user: ${user}`);
+      }
+  
+      return res.status(201).json({
+        success: true,
+        message: 'Order created successfully',
+        order: newOrder,
+        razorpayOrderId: razorpayOrder.id,
+      });
+  
     } catch (error) {
-        console.error('Error creating order:', error);
-        if (!res.headersSent) {
-            return res.status(500).json({
-                message: 'An error occurred while creating the order',
-                error: error.message || error,
-            });
-        }
+      console.error('createOrder Error:', error);
+      return res.status(500).json({ message: error.message || 'Server error' });
     }
-};
-
-
-
-
-exports.verifyPayment = async (req, res) => {
+  };
+  
+  // ============================
+  // 2️⃣ Verify Payment Signature (Client)
+  // ============================
+  exports.verifyPayment = async (req, res) => {
     try {
-        const { orderId, razorpayPaymentId, razorpaySignature } = req.body;
-        console.log('verifyPayment--------->', orderId, razorpayPaymentId, razorpaySignature);
-
-        if (!orderId || !razorpayPaymentId || !razorpaySignature) {
-            return res.status(400).json({ message: "Order ID, Razorpay Payment ID, and Signature are required" });
-        }
-
-        // Verify the payment
-        const isPaymentVerified = verifyRazorpayPayment(orderId, razorpayPaymentId, razorpaySignature);
-        console.log('Payment Verification Result:', isPaymentVerified);
-
-        if (!isPaymentVerified) {
-            return res.status(400).json({ message: "Payment verification failed" });
-        }
-
-        // Find and update the order
-        const updatedOrder = await Order.findOneAndUpdate(
-            { orderId },
-            { $set: { paymentStatus: 'Completed', paymentId: razorpayPaymentId } },
-            { new: true }
-        );
-
-        if (!updatedOrder) {
-            return res.status(404).json({ message: "Order not found" });
-        }
-
-        console.log('Updated Order:', updatedOrder);
-
-        // Send email confirmation
-        try {
-            const userEmail = updatedOrder.address.email;
-            await sendOrderConfirmationEmail(updatedOrder, userEmail, 'Payment Successful');
-        } catch (emailError) {
-            console.error('Error sending email:', emailError.message);
-        }
-
-        res.status(200).json({
-            success: true,
-            message: 'Payment verified and order updated successfully',
-            order: updatedOrder,
-        });
+      const { orderId, razorpayPaymentId, razorpaySignature } = req.body;
+  
+      if (!orderId || !razorpayPaymentId || !razorpaySignature) {
+        return res.status(400).json({ message: 'All fields are required' });
+      }
+  
+      const isVerified = verifyRazorpaySignature(orderId, razorpayPaymentId, razorpaySignature);
+  
+      if (!isVerified) {
+        return res.status(400).json({ message: 'Payment verification failed' });
+      }
+  
+      const updatedOrder = await Order.findOneAndUpdate(
+        { orderId },
+        { paymentStatus: 'Completed', paymentId: razorpayPaymentId },
+        { new: true }
+      );
+  
+      if (!updatedOrder) {
+        return res.status(404).json({ message: 'Order not found' });
+      }
+  
+      // Optional: Send confirmation email
+      try {
+        await sendOrderConfirmationEmail(updatedOrder, updatedOrder.address.email, 'Payment Successful');
+      } catch (emailErr) {
+        console.error('Email send error:', emailErr.message);
+      }
+  
+      res.status(200).json({
+        success: true,
+        message: 'Payment verified & order updated',
+        order: updatedOrder,
+      });
+  
     } catch (error) {
-        console.error('Error verifying payment:', error.message, error.stack);
-        res.status(500).json({ message: error.message || 'Internal server error' });
+      console.error('verifyPayment Error:', error);
+      res.status(500).json({ message: error.message || 'Server error' });
     }
-};
-
-
-const verifyRazorpayPayment = (orderId, razorpayPaymentId, razorpaySignature) => {
-    const razorpaySecret = process.env.RAZORPAY_KEY_SECRET;
-
-    if (!razorpaySecret) {
-        console.error('Razorpay secret key is not defined');
-        throw new Error('Razorpay secret key is missing');
-    }
-
-    const body = `${orderId}|${razorpayPaymentId}`;
+  };
+  
+  // Utility for signature check
+  const verifyRazorpaySignature = (orderId, paymentId, signature) => {
+    const body = `${orderId}|${paymentId}`;
     const expectedSignature = crypto
-        .createHmac('sha256', razorpaySecret)
-        .update(body)
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .update(body)
+      .digest('hex');
+  
+    return expectedSignature === signature;
+  };
+  
+  // ============================
+  // 3️⃣ Razorpay Webhook (Source of Truth)
+  // ============================
+  exports.razorpayWebhook = async (req, res) => {
+    try {
+      const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+  
+      const signature = req.headers['x-razorpay-signature'];
+  
+      const expectedSignature = crypto
+        .createHmac('sha256', webhookSecret)
+        .update(JSON.stringify(req.body))
         .digest('hex');
-
-    return expectedSignature === razorpaySignature; // Returns true or false
-};
-
+  
+      if (signature !== expectedSignature) {
+        console.log('❌ Invalid webhook signature');
+        return res.status(400).send('Invalid signature');
+      }
+  
+      const event = req.body.event;
+      console.log('✅ Webhook Event:', event);
+  
+      if (event === 'payment.captured') {
+        const paymentEntity = req.body.payload.payment.entity;
+        const razorpayOrderId = paymentEntity.order_id;
+        const razorpayPaymentId = paymentEntity.id;
+  
+        const order = await Order.findOne({ orderId: razorpayOrderId });
+  
+        if (!order) {
+          console.log('❌ Order not found for webhook');
+          return res.status(404).send('Order not found');
+        }
+  
+        if (order.paymentStatus !== 'Completed') {
+          order.paymentStatus = 'Completed';
+          order.paymentId = razorpayPaymentId;
+          await order.save();
+          console.log(`✅ Order updated by webhook: ${order._id}`);
+        }
+      }
+  
+      res.status(200).json({ status: 'ok' });
+  
+    } catch (error) {
+      console.error('razorpayWebhook Error:', error);
+      res.status(500).send('Webhook processing failed');
+    }
+  };
 
 
 exports.updateOrderStatus = async (req, res) => {
