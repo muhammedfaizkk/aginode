@@ -57,12 +57,7 @@ const orderSchema = new mongoose.Schema(
       city: { type: String, required: true },
       state: { type: String, required: true },
       postalCode: { type: String, required: true },
-    },
-    status: {
-      type: String,
-      enum: ["Pending", "Shipped", "Delivered", "Cancelled"],
-      default: "Pending",
-    },
+    }
   },
   { timestamps: true }
 );
