@@ -5,7 +5,7 @@ require('dotenv').config();
 
 const app = express();
 
-// ✅ ROUTES
+const { razorpayWebhook } = require('./controllers/orders');
 const ProductRout = require('./routes/ProductRout');
 const userRout = require('./routes/userRoute');
 const adminRout = require('./routes/adminRout');
@@ -15,10 +15,6 @@ const shippingaddress = require('./routes/shippingaddress');
 const favoriteRoutes = require('./routes/favoriteRoutes');
 const banners = require('./routes/banners');
 const categoryRoute = require('./routes/categoryRoute');
-
-// ✅ MIDDLEWARES
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 // ✅ STATIC FILES
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -45,11 +41,22 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions)); // ✅ Handle preflight requests
 
+// ✅ WEBHOOK MUST COME BEFORE global body parsers
+app.post(
+  '/api/webhook',
+  express.raw({ type: 'application/json' }), // ✅ Use raw body for signature verification
+  razorpayWebhook
+);
+
+// ✅ Global body parsers for normal routes
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 // ✅ ROUTES MOUNTING
 app.use(ProductRout);
 app.use(userRout);
 app.use(adminRout);
-app.use(ordersRoute);
+app.use(ordersRoute); // <-- make sure your router does NOT include the webhook here!
 app.use(cartRoute);
 app.use(shippingaddress);
 app.use(favoriteRoutes);
