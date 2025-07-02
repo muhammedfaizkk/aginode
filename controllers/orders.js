@@ -218,18 +218,14 @@ exports.createOrder = async (req, res) => {
     return expectedSignature === signature;
   };
   
-  // ============================
-  // 3️⃣ Razorpay Webhook (Source of Truth)
-  // ============================
   exports.razorpayWebhook = async (req, res) => {
     try {
       const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
   
       const signature = req.headers['x-razorpay-signature'];
-  
       const expectedSignature = crypto
         .createHmac('sha256', webhookSecret)
-        .update(JSON.stringify(req.body))
+        .update(req.body) // <-- raw buffer, not JSON.stringify
         .digest('hex');
   
       if (signature !== expectedSignature) {
@@ -237,11 +233,12 @@ exports.createOrder = async (req, res) => {
         return res.status(400).send('Invalid signature');
       }
   
-      const event = req.body.event;
+      const parsedBody = JSON.parse(req.body); // Now parse it
+      const event = parsedBody.event;
       console.log('✅ Webhook Event:', event);
   
       if (event === 'payment.captured') {
-        const paymentEntity = req.body.payload.payment.entity;
+        const paymentEntity = parsedBody.payload.payment.entity;
         const razorpayOrderId = paymentEntity.order_id;
         const razorpayPaymentId = paymentEntity.id;
   
@@ -261,13 +258,12 @@ exports.createOrder = async (req, res) => {
       }
   
       res.status(200).json({ status: 'ok' });
-  
     } catch (error) {
       console.error('razorpayWebhook Error:', error);
       res.status(500).send('Webhook processing failed');
     }
   };
-
+  
 
 exports.updateOrderStatus = async (req, res) => {
     try {

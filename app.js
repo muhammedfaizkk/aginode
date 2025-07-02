@@ -44,7 +44,7 @@ app.options('*', cors(corsOptions)); // ✅ Handle preflight requests
 // ✅ WEBHOOK MUST COME BEFORE global body parsers
 app.post(
   '/api/webhook',
-  express.raw({ type: 'application/json' }), // ✅ Use raw body for signature verification
+  express.raw({ type: 'application/json' }), 
   razorpayWebhook
 );
 
