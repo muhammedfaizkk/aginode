@@ -377,7 +377,7 @@ exports.getAllOrders = async (req, res) => {
 
     // Execute query with pagination and sorting
     const orders = await query
-      .populate("products.productId", "name price images") // Only select necessary product fields
+      .populate("products.productId", "productName currentPrice photographs") // Only select necessary product fields
       .populate("user", "name email") // Include basic user info
       .sort(sort)
       .skip(skip)
