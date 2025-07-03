@@ -19,29 +19,29 @@ const categoryRoute = require('./routes/categoryRoute');
 // ✅ STATIC FILES
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// ✅ SECURE CORS SETUP for multiple frontends
-const allowedOrigins = [
-  'https://autogridnumberplate.com',
-  'https://admin.autogridnumberplate.com'
-];
 
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    } else {
-      return callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  optionsSuccessStatus: 200
-};
+// const allowedOrigins = [
+//   'https://autogridnumberplate.com',
+//   'https://admin.autogridnumberplate.com'
+// ];
 
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // ✅ Handle preflight requests
+// const corsOptions = {
+//   origin: function (origin, callback) {
+//     if (!origin) return callback(null, true);
+//     if (allowedOrigins.includes(origin)) {
+//       return callback(null, true);
+//     } else {
+//       return callback(new Error('Not allowed by CORS'));
+//     }
+//   },
+//   credentials: true,
+//   optionsSuccessStatus: 200
+// };
 
-// ✅ WEBHOOK MUST COME BEFORE global body parsers
+//  app.use(cors(corsOptions));
+// app.options('*', cors(corsOptions)); // ✅ Handle preflight requests
+
+app.use(cors({ origin: true, credentials: true }));
 app.post(
   '/api/webhook',
   express.raw({ type: 'application/json' }), 
