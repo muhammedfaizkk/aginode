@@ -174,11 +174,12 @@ const verifyRazorpaySignature = (orderId, paymentId, signature) => {
 
 exports.verifyPayment = async (req, res) => {
   try {
-    const { orderId, razorpayPaymentId, razorpaySignature, paymentStatus } = req.body;
+    const { orderId, razorpayPaymentId, razorpaySignature } = req.body;
 
-    if (!orderId || !paymentStatus) {
-      return res.status(400).json({ message: 'Order ID and payment status are required' });
+    if (!orderId || !razorpayPaymentId || !razorpaySignature) {
+      return res.status(400).json({ message: 'Order ID, payment ID and signature are required' });
     }
+    
 
     const order = await Order.findOne({ orderId });
     if (!order) {
@@ -256,9 +257,10 @@ exports.razorpayWebhook = async (req, res) => {
     const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
     const signature = req.headers['x-razorpay-signature'];
 
+    // Create expected signature
     const expectedSignature = crypto
       .createHmac('sha256', webhookSecret)
-      .update(req.body) // use raw Buffer
+      .update(req.body) // using raw body Buffer
       .digest('hex');
 
     if (signature !== expectedSignature) {
@@ -271,14 +273,61 @@ exports.razorpayWebhook = async (req, res) => {
     const paymentEntity = payload.payload.payment.entity;
     const orderId = paymentEntity.order_id;
 
-    console.log(`Processing webhook event: ${event} for order: ${orderId}`);
+    console.log(`✅ Processing webhook event: ${event} for order: ${orderId}`);
 
-    // ✅ your other logic...
+    // Find order
+    const order = await Order.findOne({ orderId });
+    if (!order) {
+      console.log('❌ Order not found for webhook');
+      return res.status(404).send('Order not found');
+    }
+
+    // Determine status
+    const finalStatus = event === 'payment.captured' ? 'Completed' : 'Failed';
+
+    // Create payment attempt
+    const attemptId = uuidv4();
+    const paymentAttempt = {
+      attemptId,
+      paymentId: paymentEntity.id,
+      status: finalStatus,
+      razorpayResponse: paymentEntity,
+      timestamp: new Date()
+    };
+
+    // Update order
+    order.paymentStatus = finalStatus;
+    order.paymentAttempts.push(paymentAttempt);
+
+    if (finalStatus === 'Completed') {
+      order.paymentId = paymentEntity.id;
+    }
+
+    await order.save();
+
+    // Send email
+    try {
+      if (finalStatus === 'Completed') {
+        await sendOrderConfirmationEmail(order, order.address.email);
+      } else {
+        await sendPaymentFailedEmail(
+          order,
+          order.address.email,
+          paymentEntity.error_description || 'Payment failed'
+        );
+      }
+    } catch (emailErr) {
+      console.error('❌ Email send error:', emailErr);
+    }
+
+    res.status(200).json({ status: 'ok' });
+
   } catch (err) {
-    console.error('Webhook processing error:', err);
+    console.error('❌ Webhook processing error:', err);
     res.status(500).send('Webhook processing failed');
   }
 };
+
 
 
 
