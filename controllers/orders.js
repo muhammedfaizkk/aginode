@@ -5,7 +5,6 @@ const nodemailer = require('nodemailer');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
 require('dotenv').config();
-const mongoose = require("mongoose");
 
 async function sendOrderConfirmationEmail(order, userEmail, paymentLink) {
   const transporter = nodemailer.createTransport({
@@ -164,98 +163,88 @@ exports.createOrder = async (req, res) => {
 
 
 const verifyRazorpaySignature = (orderId, paymentId, signature) => {
-  if (!process.env.RAZORPAY_KEY_SECRET) {
-    throw new Error('Razorpay secret not configured');
-  }
-
   const body = `${orderId}|${paymentId}`;
-  return crypto
+  const expectedSignature = crypto
     .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
     .update(body)
-    .digest('hex') === signature;
+    .digest('hex');
+  return expectedSignature === signature;
 };
 
+// Payment Verification via Frontend Callback
 exports.verifyPayment = async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
     const { orderId, razorpayPaymentId, razorpaySignature } = req.body;
 
-    // Validate required fields
     if (!orderId || !razorpayPaymentId || !razorpaySignature) {
-      await session.abortTransaction();
-      return res.status(400).json({
-        message: 'Order ID, payment ID, and signature are required'
-      });
+      return res.status(400).json({ message: 'Missing payment details' });
     }
 
-    const order = await Order.findOne({ orderId }).session(session);
+    const order = await Order.findOne({ orderId });
     if (!order) {
-      await session.abortTransaction();
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    if (order.paymentStatus === 'Completed') {
-      await session.abortTransaction();
-      return res.status(200).json({
-        success: true,
-        message: 'Payment already completed'
-      });
-    }
+    const attemptId = uuidv4();
 
     const isVerified = verifyRazorpaySignature(orderId, razorpayPaymentId, razorpaySignature);
-    const paymentStatus = isVerified ? 'Completed' : 'Failed';
-
-    order.paymentStatus = paymentStatus;
-    order.paymentId = razorpayPaymentId;
-    order.paymentDate = new Date();
-
-    await order.save({ session });
-
-    try {
-      if (paymentStatus === 'Completed') {
-        await sendOrderConfirmationEmail(order, order.address.email);
-      } else {
-        await sendPaymentFailedEmail(order, order.address.email);
-      }
-    } catch (emailErr) {
-      console.error('Email error:', emailErr);
+    if (!isVerified) {
+      const failedAttempt = {
+        attemptId,
+        paymentId: razorpayPaymentId,
+        status: 'Failed',
+        error: { message: 'Signature verification failed' },
+        timestamp: new Date()
+      };
+      order.paymentAttempts.push(failedAttempt);
+      order.paymentStatus = 'Failed';
+      await order.save();
+      return res.status(400).json({ message: 'Signature verification failed' });
     }
 
-    await session.commitTransaction();
+    // Record successful payment
+    const paymentAttempt = {
+      attemptId,
+      paymentId: razorpayPaymentId,
+      status: 'Completed',
+      razorpayResponse: { signature: razorpaySignature, verified: true },
+      timestamp: new Date()
+    };
 
-    return res.status(isVerified ? 200 : 400).json({
-      success: isVerified,
-      message: isVerified ? 'Payment verified' : 'Payment failed',
+    order.paymentStatus = 'Completed';
+    order.paymentId = razorpayPaymentId;
+    order.paymentAttempts.push(paymentAttempt);
+
+    await order.save();
+
+    // Send confirmation email
+    try {
+      await sendOrderConfirmationEmail(order, order.address.email);
+    } catch (err) {
+      console.error('Email error:', err);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Payment verified successfully',
+      attemptId,
       order
     });
-
   } catch (error) {
-    await session.abortTransaction();
-    console.error('Payment error:', error);
-    return res.status(500).json({
-      message: 'Payment processing error'
-    });
-  } finally {
-    session.endSession();
+    console.error('Payment verification error:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
-// Similar transaction improvements for webhook handler
-
+// Razorpay Webhook Handler
 exports.razorpayWebhook = async (req, res) => {
   try {
     const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
     const signature = req.headers['x-razorpay-signature'];
 
-    // Use raw body if available (configure this in your Express middleware)
-    const rawBody = req.rawBody || req.body;
-
-    // Verify signature
     const expectedSignature = crypto
       .createHmac('sha256', webhookSecret)
-      .update(rawBody)
+      .update(req.body) // req.body is a raw buffer
       .digest('hex');
 
     if (signature !== expectedSignature) {
@@ -263,68 +252,55 @@ exports.razorpayWebhook = async (req, res) => {
       return res.status(400).send('Invalid signature');
     }
 
-    const payload = JSON.parse(rawBody.toString());
-    const event = payload.event;
-    const paymentEntity = payload.payload.payment.entity;
+    const data = JSON.parse(req.body); // parse raw buffer
+    const event = data.event;
+    const paymentEntity = data.payload.payment.entity;
     const orderId = paymentEntity.order_id;
 
-    console.log(`✅ Processing webhook event: ${event} for order: ${orderId}`);
-
-    // Validate we're handling a payment event
-    if (!['payment.captured', 'payment.failed'].includes(event)) {
-      console.log(`⚠️ Unhandled webhook event: ${event}`);
-      return res.status(200).json({ status: 'unhandled_event' });
-    }
-
-    // Find and validate order
     const order = await Order.findOne({ orderId });
     if (!order) {
-      console.log('❌ Order not found for webhook');
+      console.log('Order not found for webhook');
       return res.status(404).send('Order not found');
     }
 
-    // Determine status
-    const finalStatus = event === 'payment.captured' ? 'Completed' : 'Failed';
-
-    // Update order
-    order.paymentStatus = finalStatus;
-
-    if (finalStatus === 'Completed') {
-      order.paymentId = paymentEntity.id;
-      order.paymentDate = new Date(); // Consistent with verifyPayment
+    const isDuplicate = order.paymentAttempts.some(p => p.paymentId === paymentEntity.id);
+    if (isDuplicate) {
+      return res.status(200).send('Already processed');
     }
 
-    try {
-      await order.save();
-    } catch (saveErr) {
-      console.error('❌ Order save error:', saveErr);
-      return res.status(500).send('Failed to update order');
-    }
+    const attemptId = uuidv4();
+    const status = event === 'payment.captured' ? 'Completed' : 'Failed';
 
-    // Send email notification
+    const paymentAttempt = {
+      attemptId,
+      paymentId: paymentEntity.id,
+      status,
+      razorpayResponse: paymentEntity,
+      timestamp: new Date()
+    };
+
+    order.paymentStatus = status;
+    if (status === 'Completed') order.paymentId = paymentEntity.id;
+    order.paymentAttempts.push(paymentAttempt);
+
+    await order.save();
+
     try {
-      if (finalStatus === 'Completed') {
+      if (status === 'Completed') {
         await sendOrderConfirmationEmail(order, order.address.email);
       } else {
-        await sendPaymentFailedEmail(
-          order,
-          order.address.email,
-          paymentEntity.error_description || 'Payment failed'
-        );
+        await sendPaymentFailedEmail(order, order.address.email, paymentEntity.error_description || 'Payment failed');
       }
-    } catch (emailErr) {
-      console.error('❌ Email send error:', emailErr);
-      // Continue despite email failure
+    } catch (err) {
+      console.error('Webhook email error:', err);
     }
 
-    res.status(200).json({ status: 'processed' });
-
-  } catch (err) {
-    console.error('❌ Webhook processing error:', err);
-    res.status(500).send('Webhook processing failed');
+    res.status(200).json({ status: 'ok' });
+  } catch (error) {
+    console.error('Webhook processing error:', error);
+    res.status(500).send('Webhook failed');
   }
 };
-
 
 
 exports.updateOrderStatus = async (req, res) => {
@@ -426,7 +402,7 @@ exports.getAllOrders = async (req, res) => {
       },
       filters: {
         paymentStatus: req.query.paymentStatus || 'none',
-        dateRange: req.query.startDate && req.query.endDate
+        dateRange: req.query.startDate && req.query.endDate 
           ? { start: req.query.startDate, end: req.query.endDate }
           : 'none'
       }

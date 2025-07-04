@@ -26,7 +26,7 @@ const orderSchema = new mongoose.Schema(
         },
         vehicleModel: {
           type: String,
-          required: false, 
+          required: false,
         },
         vehicleNumber: {
           type: String,
@@ -42,13 +42,23 @@ const orderSchema = new mongoose.Schema(
       type: String,
       required: function () {
         return this.paymentStatus === "Completed";
-      }, 
+      },
     },
     paymentStatus: {
       type: String,
       enum: ["Pending", "Completed", "Failed"],
       default: "Pending",
     },
+    paymentAttempts: [
+      {
+        attemptId: { type: String, required: true },
+        paymentId: { type: String },
+        status: { type: String, enum: ["Pending", "Completed", "Failed"], required: true },
+        razorpayResponse: { type: mongoose.Schema.Types.Mixed },
+        error: { type: mongoose.Schema.Types.Mixed },
+        timestamp: { type: Date, default: Date.now }
+      }
+    ],
     address: {
       name: { type: String, required: true },
       phone: { type: String, required: true },
