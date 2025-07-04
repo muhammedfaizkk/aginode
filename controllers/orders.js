@@ -5,6 +5,7 @@ const nodemailer = require('nodemailer');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
 require('dotenv').config();
+const mongoose = require("mongoose");
 
 async function sendOrderConfirmationEmail(order, userEmail, paymentLink) {
   const transporter = nodemailer.createTransport({
