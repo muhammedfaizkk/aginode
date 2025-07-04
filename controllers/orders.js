@@ -15,6 +15,20 @@ async function sendOrderConfirmationEmail(order, userEmail, paymentLink) {
     },
   });
 
+  // Format the date properly for Indian timezone (IST)
+  const options = {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true
+  };
+  
+  const formattedDate = new Date(order.createdAt).toLocaleString('en-IN', options);
+
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: userEmail,
@@ -30,7 +44,7 @@ async function sendOrderConfirmationEmail(order, userEmail, paymentLink) {
                 <h2 style="color: #4CAF50; border-bottom: 2px solid #4CAF50; padding-bottom: 5px;">Order Details</h2>
                 <p style="margin: 10px 0;"><strong>Order ID:</strong> ${order.orderId}</p>
                 <p style="margin: 10px 0;"><strong>Total Amount:</strong> ₹${order.totalAmount}</p>
-                <p style="margin: 10px 0;"><strong>Order Placed At:</strong> ${new Date(order.createdAt).toLocaleString()}</p>
+                <p style="margin: 10px 0;"><strong>Order Placed At:</strong> ${formattedDate}</p>
             </div>
 
             <div style="margin-top: 20px; background-color: #ffffff; padding: 15px 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);">
