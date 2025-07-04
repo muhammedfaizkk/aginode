@@ -175,8 +175,9 @@ const verifyRazorpaySignature = (orderId, paymentId, signature) => {
 exports.verifyPayment = async (req, res) => {
   try {
     const { orderId, razorpayPaymentId, razorpaySignature } = req.body;
-
-    if (!orderId || !razorpayPaymentId || !razorpaySignature) {
+   console.log('razorpayPaymentId, razorpaySignature----->',razorpayPaymentId, razorpaySignature);
+   
+    if (!orderId) {
       return res.status(400).json({ message: 'Missing payment details' });
     }
 
