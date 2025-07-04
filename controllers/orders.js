@@ -163,79 +163,85 @@ exports.createOrder = async (req, res) => {
 
 
 const verifyRazorpaySignature = (orderId, paymentId, signature) => {
+  if (!process.env.RAZORPAY_KEY_SECRET) {
+    throw new Error('Razorpay secret not configured');
+  }
+
   const body = `${orderId}|${paymentId}`;
-  const expectedSignature = crypto
+  return crypto
     .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
     .update(body)
-    .digest('hex');
-
-  return expectedSignature === signature;
+    .digest('hex') === signature;
 };
 
 exports.verifyPayment = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const { orderId, razorpayPaymentId, razorpaySignature } = req.body;
 
     // Validate required fields
     if (!orderId || !razorpayPaymentId || !razorpaySignature) {
-      return res.status(400).json({ 
-        message: 'Order ID, payment ID, and signature are required' 
+      await session.abortTransaction();
+      return res.status(400).json({
+        message: 'Order ID, payment ID, and signature are required'
       });
     }
 
-    // Find the order
-    const order = await Order.findOne({ orderId });
+    const order = await Order.findOne({ orderId }).session(session);
     if (!order) {
+      await session.abortTransaction();
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    // Verify the Razorpay signature
+    if (order.paymentStatus === 'Completed') {
+      await session.abortTransaction();
+      return res.status(200).json({
+        success: true,
+        message: 'Payment already completed'
+      });
+    }
+
     const isVerified = verifyRazorpaySignature(orderId, razorpayPaymentId, razorpaySignature);
-    
-    // Determine payment status based on verification
     const paymentStatus = isVerified ? 'Completed' : 'Failed';
 
-    // Update order status
     order.paymentStatus = paymentStatus;
     order.paymentId = razorpayPaymentId;
-    order.paymentDate = new Date(); // Add payment timestamp
-    await order.save();
+    order.paymentDate = new Date();
 
-    // Send appropriate email notification
+    await order.save({ session });
+
     try {
       if (paymentStatus === 'Completed') {
         await sendOrderConfirmationEmail(order, order.address.email);
-        // You might want to trigger other post-payment actions here
       } else {
         await sendPaymentFailedEmail(order, order.address.email);
       }
     } catch (emailErr) {
-      console.error('Email notification error:', emailErr);
-      // Don't fail the whole request if email fails
+      console.error('Email error:', emailErr);
     }
 
-    // Return appropriate response
-    if (paymentStatus === 'Completed') {
-      return res.status(200).json({
-        success: true,
-        message: 'Payment verified successfully',
-        order
-      });
-    } else {
-      return res.status(400).json({
-        success: false,
-        message: 'Payment verification failed',
-        order
-      });
-    }
+    await session.commitTransaction();
+
+    return res.status(isVerified ? 200 : 400).json({
+      success: isVerified,
+      message: isVerified ? 'Payment verified' : 'Payment failed',
+      order
+    });
 
   } catch (error) {
-    console.error('Payment verification error:', error);
-    return res.status(500).json({ 
-      message: 'Internal server error during payment verification' 
+    await session.abortTransaction();
+    console.error('Payment error:', error);
+    return res.status(500).json({
+      message: 'Payment processing error'
     });
+  } finally {
+    session.endSession();
   }
 };
+
+// Similar transaction improvements for webhook handler
 
 exports.razorpayWebhook = async (req, res) => {
   try {
@@ -281,7 +287,7 @@ exports.razorpayWebhook = async (req, res) => {
 
     // Update order
     order.paymentStatus = finalStatus;
-    
+
     if (finalStatus === 'Completed') {
       order.paymentId = paymentEntity.id;
       order.paymentDate = new Date(); // Consistent with verifyPayment
@@ -419,7 +425,7 @@ exports.getAllOrders = async (req, res) => {
       },
       filters: {
         paymentStatus: req.query.paymentStatus || 'none',
-        dateRange: req.query.startDate && req.query.endDate 
+        dateRange: req.query.startDate && req.query.endDate
           ? { start: req.query.startDate, end: req.query.endDate }
           : 'none'
       }
