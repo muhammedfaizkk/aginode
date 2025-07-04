@@ -256,10 +256,9 @@ exports.razorpayWebhook = async (req, res) => {
     const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
     const signature = req.headers['x-razorpay-signature'];
 
-    // Verify webhook signature
     const expectedSignature = crypto
       .createHmac('sha256', webhookSecret)
-      .update(JSON.stringify(req.body))
+      .update(req.body) // use raw Buffer
       .digest('hex');
 
     if (signature !== expectedSignature) {
@@ -267,56 +266,20 @@ exports.razorpayWebhook = async (req, res) => {
       return res.status(400).send('Invalid signature');
     }
 
-    const event = req.body.event;
-    const paymentEntity = req.body.payload.payment.entity;
+    const payload = JSON.parse(req.body.toString());
+    const event = payload.event;
+    const paymentEntity = payload.payload.payment.entity;
     const orderId = paymentEntity.order_id;
 
     console.log(`Processing webhook event: ${event} for order: ${orderId}`);
 
-    const order = await Order.findOne({ orderId });
-    if (!order) {
-      console.log('Order not found for webhook');
-      return res.status(404).send('Order not found');
-    }
-
-    // Create payment attempt record
-    const attemptId = uuidv4();
-    const paymentAttempt = {
-      attemptId,
-      paymentId: paymentEntity.id,
-      status: event === 'payment.captured' ? 'Completed' : 'Failed',
-      razorpayResponse: paymentEntity,
-      timestamp: new Date()
-    };
-
-    // Update order status
-    order.paymentStatus = paymentAttempt.status;
-    order.paymentAttempts.push(paymentAttempt);
-
-    if (paymentAttempt.status === 'Completed') {
-      order.paymentId = paymentEntity.id;
-    }
-
-    await order.save();
-
-    // Send appropriate email
-    try {
-      if (paymentAttempt.status === 'Completed') {
-        await sendOrderConfirmationEmail(order, order.address.email);
-      } else {
-        await sendPaymentFailedEmail(order, order.address.email, paymentEntity.error_description || 'Payment failed');
-      }
-    } catch (emailErr) {
-      console.error('Email error:', emailErr);
-    }
-
-    res.status(200).json({ status: 'ok' });
-
-  } catch (error) {
-    console.error('Webhook processing error:', error);
+    // ✅ your other logic...
+  } catch (err) {
+    console.error('Webhook processing error:', err);
     res.status(500).send('Webhook processing failed');
   }
 };
+
 
 
 exports.updateOrderStatus = async (req, res) => {
